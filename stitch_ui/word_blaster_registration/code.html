@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Word Blaster - Registration</title>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                "brand-gray": "#1A1A1A",
+                "on-secondary": "#313030",
+                "tertiary-fixed": "#e2e2e2",
+                "surface-dim": "#141313",
+                "primary-fixed-dim": "#c6c6c7",
+                "surface-container-low": "#1c1b1b",
+                "tertiary": "#ffffff",
+                "surface-container-high": "#2a2a2a",
+                "outline-variant": "#444748",
+                "on-primary": "#2f3131",
+                "surface-container-lowest": "#0e0e0e",
+                "tertiary-container": "#e2e2e2",
+                "surface": "#141313",
+                "secondary-fixed-dim": "#c8c6c5",
+                "on-secondary-container": "#b7b5b4",
+                "background": "#000000",
+                "on-error": "#690005",
+                "on-primary-fixed": "#1a1c1c",
+                "tertiary-fixed-dim": "#c6c6c7",
+                "error": "#ffb4ab",
+                "inverse-surface": "#e5e2e1",
+                "primary-fixed": "#e2e2e2",
+                "on-error-container": "#ffdad6",
+                "inverse-on-surface": "#313030",
+                "on-surface": "#e5e2e1",
+                "on-primary-container": "#636565",
+                "primary-container": "#e2e2e2",
+                "primary": "#ffffff",
+                "error-container": "#93000a",
+                "on-background": "#e5e2e1",
+                "on-tertiary-fixed": "#1a1c1c",
+                "on-primary-fixed-variant": "#454747",
+                "on-secondary-fixed": "#1c1b1b",
+                "secondary-fixed": "#e5e2e1",
+                "surface-bright": "#3a3939",
+                "surface-container-highest": "#353434",
+                "secondary-container": "#474746",
+                "on-secondary-fixed-variant": "#474746",
+                "inverse-primary": "#5d5f5f",
+                "on-tertiary": "#2f3131",
+                "surface-variant": "#353434",
+                "surface-container": "#201f1f",
+                "on-tertiary-fixed-variant": "#454747",
+                "secondary": "#c8c6c5",
+                "surface-tint": "#c6c6c7",
+                "outline": "#8e9192",
+                "on-surface-variant": "#c4c7c8",
+                "on-tertiary-container": "#636565"
+              },
+              "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+              },
+              "spacing": {
+                "base": "8px",
+                "lg": "48px",
+                "margin-desktop": "64px",
+                "xs": "4px",
+                "md": "24px",
+                "margin-mobile": "20px",
+                "sm": "12px",
+                "xl": "80px",
+                "gutter": "16px"
+              },
+              "fontFamily": {
+                "label-md": ["Inter"],
+                "headline-lg-mobile": ["Inter"],
+                "title-md": ["Inter"],
+                "headline-lg": ["Inter"],
+                "label-sm": ["Inter"],
+                "body-md": ["Inter"],
+                "display-lg": ["Inter"],
+                "body-lg": ["Inter"],
+                "display-2xl": ["Inter"]
+              },
+              "fontSize": {
+                "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "display-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                "display-2xl": ["72px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "800"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        ::selection { background-color: rgba(255, 255, 255, 0.3); }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { background-color: #000000; color: #e5e2e1; }
+        
+        .stagger-reveal {
+            animation: revealUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        @keyframes revealUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="font-body-md overflow-x-hidden">
+<main class="flex min-h-screen w-full bg-black p-2 lg:h-screen lg:overflow-hidden lg:p-4">
+<!-- Left Column (Hero) -->
+<section class="w-[52%] hidden lg:flex relative flex-col items-center justify-end pb-32 px-12 rounded-[32px] overflow-hidden shadow-2xl bg-brand-gray border border-white/5">
+<video autoplay="" class="absolute inset-0 w-full h-full object-cover" loop="" muted="" playsinline="">
+<source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260506_081238_406ed0e3-5d83-436e-a512-0bbff7ec5b95.mp4" type="video/mp4"/>
+</video>
+<div class="z-10 w-full max-w-xs space-y-8">
+<div class="stagger-reveal flex items-center gap-3" style="animation-delay: 0.1s;">
+<div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-black" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<span class="text-xl font-semibold tracking-tight text-white">Word Blaster</span>
+</div>
+<div class="space-y-4">
+<h1 class="stagger-reveal font-headline-lg text-[40px] leading-tight text-white" style="animation-delay: 0.2s;">
+                        Join Word Blaster
+                    </h1>
+<p class="stagger-reveal font-body-lg text-white/70" style="animation-delay: 0.3s;">
+                        Follow these 3 quick phases to start your word-blasting adventure.
+                    </p>
+</div>
+<div class="space-y-4 stagger-reveal" style="animation-delay: 0.4s;">
+<!-- StepItem: Profile -->
+<div class="flex items-center gap-4">
+<div class="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center font-bold text-sm">1</div>
+<span class="font-medium text-white">Profile</span>
+</div>
+<!-- StepItem: Avatar -->
+<div class="flex items-center gap-4">
+<div class="w-8 h-8 rounded-full bg-white/10 text-white/40 flex items-center justify-center font-bold text-sm border border-white/5">2</div>
+<span class="font-medium text-white/40">Avatar</span>
+</div>
+<!-- StepItem: Arena -->
+<div class="flex items-center gap-4">
+<div class="w-8 h-8 rounded-full bg-white/10 text-white/40 flex items-center justify-center font-bold text-sm border border-white/5">3</div>
+<span class="font-medium text-white/40">Arena</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Column (Form) -->
+<section class="flex-1 flex flex-col items-center justify-center py-12 px-4 sm:px-12 lg:px-16 overflow-y-auto fade-in">
+<div class="w-full max-w-md space-y-10">
+<!-- Header -->
+<div class="space-y-2 text-center lg:text-left">
+<h2 class="font-headline-lg-mobile lg:font-headline-lg text-white">Create Player Account</h2>
+<p class="text-white/40 font-body-md">Enter your details to join the leaderboard.</p>
+</div>
+<!-- Social Login -->
+<div class="grid grid-cols-2 gap-4">
+<button class="flex items-center justify-center gap-3 h-12 bg-black border border-white/10 rounded-xl hover:bg-white/5 active:scale-[0.98] transition-all">
+<img alt="Google" class="w-5 h-5 grayscale invert" src="https://lh3.googleusercontent.com/aida-public/AB6AXuASS0_PXnt0SxrRVplas5xwdKT7B5vfkbH8RJU28rYXGFnu6QbDAkctqM0sNGkcRYiUia3vJmR-HLqUya0U9bGOMJ8vU_Jc2cY7M2zkEl8iROxmV1l2-cD_d-z8XLM5dJVCFZyXiQa2Avv_xaDXHKF6PBh0y3N7RvEXGqTxiLHHLvEKZxSnS65yaKq7gcccxyot15RPbUzmOW0RDHmL9DFBa2gwjsXMd_mq0JMUowDxAJTtux3oEo992ehEb7eQGsoNSEzhVLf-CTVo"/>
+<span class="font-label-md text-white">Google</span>
+</button>
+<button class="flex items-center justify-center gap-3 h-12 bg-black border border-white/10 rounded-xl hover:bg-white/5 active:scale-[0.98] transition-all">
+<img alt="Github" class="w-5 h-5 invert" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5eamuKxSomeQMiqGvIoDfKKv6dh9SMME1uUrQhd0Uwvh2PJ9v6vXPGbBXv3eUupv8nOyGw2uECAsegRaDCfBgWfHO3-lnu6ol-OgtI3PBsO4RfOYBhsB7qgiHS5VcGIWb-b2zykXhzYXP4x7vOjoJ5VIwILqX0hwiegLUtJy4hnYUVrj6qoggv9xOjhkHQ9J0R8dNUiE2-2vjNHYeAikRI8iXu9_FGUiOEH5TemcvHo4vo5GAIA-_sJqhLtvY7RHXbNcR7ykFPGx-"/>
+<span class="font-label-md text-white">Github</span>
+</button>
+</div>
+<!-- Divider -->
+<div class="relative flex items-center">
+<div class="flex-grow border-t border-white/10"></div>
+<span class="flex-shrink mx-4 text-white/40 font-label-sm uppercase tracking-widest">Or</span>
+<div class="flex-grow border-t border-white/10"></div>
+</div>
+<!-- Registration Form -->
+<form class="space-y-6" onsubmit="event.preventDefault();">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div class="space-y-2">
+<label class="font-label-sm text-white/60 ml-1">First Name</label>
+<input class="w-full h-14 bg-brand-gray border border-white/5 rounded-xl px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/10" placeholder="Leon" type="text"/>
+</div>
+<div class="space-y-2">
+<label class="font-label-sm text-white/60 ml-1">Last Name</label>
+<input class="w-full h-14 bg-brand-gray border border-white/5 rounded-xl px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/10" placeholder="Kennedy" type="text"/>
+</div>
+</div>
+<div class="space-y-2">
+<label class="font-label-sm text-white/60 ml-1">Email</label>
+<input class="w-full h-14 bg-brand-gray border border-white/5 rounded-xl px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/10" placeholder="blaster@arena.com" type="email"/>
+</div>
+<div class="space-y-2">
+<label class="font-label-sm text-white/60 ml-1">Password</label>
+<div class="relative">
+<input class="w-full h-14 bg-brand-gray border border-white/5 rounded-xl px-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/10" id="password-input" placeholder="••••••••" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-white transition-colors" onclick="togglePassword()" type="button">
+<span class="material-symbols-outlined" id="eye-icon">visibility</span>
+</button>
+</div>
+<p class="text-white/30 text-[11px] font-label-sm tracking-wide ml-1">Requires at least 8 symbols</p>
+</div>
+<button class="w-full h-14 bg-white text-black font-headline-lg-mobile rounded-xl hover:opacity-90 active:scale-95 transition-all mt-4" type="submit">
+                        Start Blasting
+                    </button>
+</form>
+<!-- Footer -->
+<p class="text-center text-white/40 font-body-md">
+                    Already a player? <a class="text-white font-semibold hover:underline transition-all" href="#">Log in</a>
+</p>
+</div>
+</section>
+</main>
+<script>
+        function togglePassword() {
+            const input = document.getElementById('password-input');
+            const icon = document.getElementById('eye-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.innerText = 'visibility_off';
+            } else {
+                input.type = 'password';
+                icon.innerText = 'visibility';
+            }
+        }
+
+        // Simple mouse tracking for a subtle atmospheric effect on the form
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth) * 2 - 1;
+            const y = (e.clientY / window.innerHeight) * 2 - 1;
+            const logo = document.querySelector('.lg\\:flex .z-10');
+            if (logo) {
+                logo.style.transform = `translate(${x * 5}px, ${y * 5}px)`;
+                logo.style.transition = 'transform 0.2s ease-out';
+            }
+        });
+    </script>
+</body></html>

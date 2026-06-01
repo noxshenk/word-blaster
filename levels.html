@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Word Blaster — Level Select</title>
+  <meta name="description" content="Choose your level and start blasting words." />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,700;1,8..60,400;1,8..60,700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="levels-page">
+    <!-- Background Video -->
+    <video class="global-bg-video" autoplay loop muted playsinline>
+      <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260315_073750_51473149-4350-4920-ae24-c8214286f323.mp4" type="video/mp4" />
+    </video>
+
+    <main class="levels-container">
+      <!-- Header -->
+      <header class="levels-header stagger-reveal" style="animation-delay: 0.1s;">
+        <div class="levels-header-left">
+          <button class="btn-back liquid-glass glass-border" id="btn-back-menu">
+            <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span>
+            <span>Back to Menu</span>
+          </button>
+          <h1 class="zone-title">Vowel Valley</h1>
+        </div>
+        <div class="levels-stats liquid-glass glass-border">
+          <div class="stat-item" id="stat-levels">
+            <span id="completed-count">0</span>/<span id="total-count">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1; font-size: 18px;">check_circle</span>
+            <span id="stars-count">0</span>/<span id="stars-total">0</span>
+          </div>
+          <div class="stat-item" id="stat-score">
+            <span id="total-score">0</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Level Grid -->
+      <div class="levels-grid" id="levels-grid">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Footer -->
+      <footer class="game-footer" style="padding: 0 var(--sp-margin-mobile) 20px;">
+        <div class="game-footer-brand liquid-glass">WORD BLASTER</div>
+        <div class="game-footer-info">
+          <span>Nox Shenk Creation</span>
+          <span>contact@noxshenk.studio</span>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script src="levels.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      // Redirect if not registered
+      if (!localStorage.getItem('wb_registered')) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      const grid = document.getElementById('levels-grid');
+      const progress = JSON.parse(localStorage.getItem('wb_progress') || '{}');
+      const currentLevel = Number(localStorage.getItem('wb_level') || 0);
+      const totalScore = Number(localStorage.getItem('wb_best') || 0);
+
+      // Calculate stats
+      let completedCount = 0;
+      let totalStars = 0;
+
+      LEVELS.forEach(function (_, i) {
+        const data = progress['level_' + i];
+        if (data && data.completed) completedCount++;
+        if (data && data.stars) totalStars += data.stars;
+      });
+
+      document.getElementById('completed-count').textContent = completedCount;
+      document.getElementById('total-count').textContent = LEVELS.length;
+      document.getElementById('stars-count').textContent = totalStars;
+      document.getElementById('stars-total').textContent = LEVELS.length * 3;
+      document.getElementById('total-score').textContent = totalScore.toLocaleString();
+
+      // Build level cards
+      LEVELS.forEach(function (level, i) {
+        const data = progress['level_' + i];
+        const isCompleted = data && data.completed;
+        const isUnlocked = i === 0 || (progress['level_' + (i - 1)] && progress['level_' + (i - 1)].completed);
+        const stars = (data && data.stars) || 0;
+
+        const card = document.createElement('div');
+        card.className = 'level-card liquid-glass glass-border';
+        if (!isUnlocked) card.classList.add('locked');
+        if (isCompleted) card.classList.add('completed');
+
+        // Stagger animation
+        card.classList.add('stagger-reveal');
+        card.style.animationDelay = (0.15 + i * 0.05) + 's';
+
+        // Number
+        const num = document.createElement('div');
+        num.className = 'level-number';
+        num.textContent = i + 1;
+
+        // Word preview
+        const word = document.createElement('div');
+        word.className = 'level-word';
+        word.textContent = level.base;
+
+        // Stars
+        const starsDiv = document.createElement('div');
+        starsDiv.className = 'level-stars';
+        for (let s = 0; s < 3; s++) {
+          const star = document.createElement('span');
+          star.className = 'material-symbols-outlined';
+          if (s < stars) {
+            star.classList.add('earned');
+            star.textContent = 'star';
+          } else {
+            star.textContent = 'star';
+          }
+          starsDiv.appendChild(star);
+        }
+
+        // Lock icon for locked levels
+        if (!isUnlocked) {
+          var lock = document.createElement('span');
+          lock.className = 'material-symbols-outlined';
+          lock.style.cssText = 'font-size: 32px; opacity: 0.4; color: var(--text-muted);';
+          lock.textContent = 'lock';
+          card.appendChild(lock);
+        } else {
+          card.appendChild(num);
+          card.appendChild(starsDiv);
+        }
+
+        // Click handler
+        if (isUnlocked) {
+          card.addEventListener('click', function () {
+            localStorage.setItem('wb_level', i);
+            // Animate card
+            card.style.transform = 'scale(0.95)';
+            card.style.opacity = '0.7';
+            setTimeout(function () {
+              window.location.href = 'game.html';
+            }, 200);
+          });
+        }
+
+        grid.appendChild(card);
+      });
+
+      // Back button
+      document.getElementById('btn-back-menu').addEventListener('click', function () {
+        window.location.href = 'menu.html';
+      });
+    })();
+  </script>
+</body>
+</html>

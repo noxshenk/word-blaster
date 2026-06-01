@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Word Blaster — Play</title>
+  <meta name="description" content="Word Blaster gameplay — drag to connect letters and find hidden words!" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,700;1,8..60,400;1,8..60,700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="game-page">
+    <!-- Background Video -->
+    <video class="global-bg-video" autoplay loop muted playsinline>
+      <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260315_073750_51473149-4350-4920-ae24-c8214286f323.mp4" type="video/mp4" />
+    </video>
+
+    <!-- Game UI -->
+    <main class="game-container" id="game-container">
+      <!-- Header -->
+      <header class="game-header stagger-reveal" style="animation-delay: 0.1s;">
+        <div class="game-header-top">
+          <button class="btn-game-back liquid-glass glass-border" id="btn-back">
+            <span class="material-symbols-outlined">arrow_back</span>
+          </button>
+          <div class="game-stats">
+            <div class="stat-box liquid-glass glass-border">
+              <span class="stat-box-label">Level</span>
+              <span class="stat-box-value" id="hud-level">1</span>
+            </div>
+            <div class="stat-box liquid-glass glass-border">
+              <span class="stat-box-label">Score</span>
+              <span class="stat-box-value" id="hud-score">0</span>
+            </div>
+            <div class="stat-box liquid-glass glass-border">
+              <span class="stat-box-label">Best</span>
+              <span class="stat-box-value" id="hud-best">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="game-progress">
+          <div class="progress-track liquid-glass glass-border">
+            <div class="progress-fill" id="progress-bar" style="width: 0%;"></div>
+          </div>
+          <div class="progress-labels">
+            <span>Progress</span>
+            <span id="progress-text">0 / 0 words</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Board Section -->
+      <section class="game-board-section">
+        <!-- Floating Word Preview -->
+        <div class="word-preview">
+          <span class="word-preview-text" id="word-preview"></span>
+        </div>
+
+        <!-- Letter Board -->
+        <div class="letter-board liquid-glass-strong glass-border" id="board-area">
+          <!-- SVG Connection Layer -->
+          <svg id="connection-svg">
+            <path id="connection-path" class="line-glow" d="" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+          <div class="letter-wheel" id="letter-wheel">
+            <!-- Letter nodes injected by JS -->
+          </div>
+        </div>
+
+        <!-- Found Words -->
+        <div class="found-words-row" id="words-list">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- Actions -->
+      <div class="game-actions stagger-reveal" style="animation-delay: 0.3s;">
+        <button class="action-btn liquid-glass-strong glass-border" id="shuffle">
+          <span class="material-symbols-outlined">refresh</span>
+          <span class="action-btn-label">Shuffle</span>
+        </button>
+        <button class="action-btn liquid-glass-strong glass-border" id="hint">
+          <span class="material-symbols-outlined">lightbulb</span>
+          <span class="action-btn-label">Hint</span>
+        </button>
+        <button class="action-btn liquid-glass-strong glass-border" id="clear">
+          <span class="material-symbols-outlined">close</span>
+          <span class="action-btn-label">Clear</span>
+        </button>
+      </div>
+
+      <!-- Footer -->
+      <footer class="game-footer">
+        <div class="game-footer-brand liquid-glass">WORD BLASTER</div>
+        <div class="game-footer-info">
+          <span>Nox Shenk Creation</span>
+          <span>contact@noxshenk.studio</span>
+          <span>github.com/noxshenk</span>
+        </div>
+      </footer>
+    </main>
+
+    <!-- Level Complete Modal -->
+    <div class="modal-overlay" id="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-title">
+          Level
+          <span class="modal-title-italic" id="modal-title-text">complete!</span>
+        </div>
+        <div class="modal-stars">
+          <span class="material-symbols-outlined star-1">star</span>
+          <span class="material-symbols-outlined star-2">star</span>
+          <span class="material-symbols-outlined star-3">star</span>
+        </div>
+        <div class="modal-summary-label">Summary</div>
+        <div class="modal-summary-text" id="modal-summary">Score: 0</div>
+        <button class="btn-modal-primary" id="btn-next-level">Next Level</button>
+        <button class="btn-modal-secondary" id="btn-replay">Replay Level</button>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast"></div>
+  </div>
+
+  <script src="levels.js"></script>
+  <script src="dictionary.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
