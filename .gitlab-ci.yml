@@ -1,0 +1,19 @@
+# Publish the static site to GitLab Pages.
+pages:
+  stage: deploy
+  script:
+    - mkdir -p public
+    - cp index.html style.css game.js levels.js dictionary.js words.txt public/
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+# Keep merge request pipelines non-empty so they don't report as failed.
+mr_check:
+  stage: test
+  script:
+    - echo "Static site - nothing to build."
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
