@@ -3,272 +3,150 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Word Blaster — Multiplayer Arena</title>
-  <meta name="description" content="Race against real-time opponents in the Word Blaster PvP Arena!" />
-  <!-- Google Fonts: Inter -->
+  <title>Word Blaster - Multiplayer Arena</title>
+  <meta name="description" content="Word Blaster multiplayer - create or join a room and battle a friend in real-time!" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,700;1,8..60,400;1,8..60,700&display=swap" rel="stylesheet" />
-  <!-- Material Symbols -->
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
-  <!-- Custom Styling to accommodate Multiplayer HUD and matchmaking screen -->
   <style>
-    /* Matchmaking lobby screen */
-    .lobby-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(10, 10, 12, 0.95);
-      z-index: 1000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      opacity: 1;
-      transition: opacity 0.5s ease;
-    }
-    .lobby-card {
-      text-align: center;
-      padding: 40px;
-      max-width: 400px;
-      width: 90%;
-    }
-    .pulse-loader {
-      position: relative;
-      width: 100px;
-      height: 100px;
-      margin: 0 auto 30px;
-    }
-    .pulse-circle {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      background: var(--neon-cyan, #00f2fe);
-      opacity: 0.15;
-      animation: pulse-ring 2s cubic-bezier(0.215, 0.610, 0.355, 1) infinite;
-    }
-    .pulse-core {
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--neon-cyan, #00f2fe), var(--neon-purple, #4facfe));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
-    }
-    @keyframes pulse-ring {
-      0% { transform: scale(0.65); opacity: 0.8; }
-      100% { transform: scale(1.5); opacity: 0; }
-    }
-
-    /* Multiplayer HUD */
-    .pvp-hud {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      gap: 16px;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .pvp-player {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .pvp-player.opponent {
-      align-items: flex-end;
-    }
-    .pvp-meta {
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.7);
-    }
-    .pvp-player.opponent .pvp-meta {
-      flex-direction: row-reverse;
-    }
-    .pvp-score {
-      font-size: 20px;
-      font-weight: 800;
-      color: #fff;
-    }
-    .pvp-timer-box {
-      min-width: 70px;
-      text-align: center;
-      padding: 10px;
-      border-radius: 12px;
-      box-shadow: 0 0 15px rgba(255, 93, 115, 0.15);
-    }
-    .pvp-timer {
-      font-size: 24px;
-      font-weight: 900;
-      color: var(--neon-red, #ff5d73);
-      font-variant-numeric: tabular-nums;
-    }
-    .pvp-progress {
-      width: 100%;
-      height: 8px;
-      border-radius: 4px;
-      overflow: hidden;
-      background: rgba(255, 255, 255, 0.05);
-    }
-    .pvp-progress-fill {
-      height: 100%;
-      width: 0%;
-      transition: width 0.3s ease;
-    }
-    .pvp-progress-fill.self {
-      background: linear-gradient(90deg, #00f2fe, #4facfe);
-      box-shadow: 0 0 8px rgba(0, 242, 254, 0.5);
-    }
-    .pvp-progress-fill.opp {
-      background: linear-gradient(90deg, #ff5d73, #ff8b94);
-      box-shadow: 0 0 8px rgba(255, 93, 115, 0.5);
-    }
-
-    /* Target Words display modification for PvP */
-    .pvp-goals-container {
-      margin-top: 15px;
-      padding: 12px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      text-align: center;
-    }
-    .pvp-goals-title {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: rgba(255, 255, 255, 0.4);
-      margin-bottom: 8px;
-    }
-
-    /* Modal customizations */
-    .modal-winner {
-      font-size: 28px;
-      font-weight: 800;
-      margin: 15px 0;
-      text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-    }
-    .modal-winner.victory {
-      color: #2fbf71;
-      text-shadow: 0 0 15px rgba(47, 191, 113, 0.4);
-    }
-    .modal-winner.defeat {
-      color: #ff5d73;
-      text-shadow: 0 0 15px rgba(255, 93, 115, 0.4);
-    }
-    .modal-scores {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin: 20px 0;
-    }
-    .modal-score-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 12px 16px;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.03);
-      font-weight: 600;
-    }
-    .modal-score-row.winner-row {
-      background: rgba(47, 191, 113, 0.1);
-      border: 1px solid rgba(47, 191, 113, 0.3);
-    }
+    .lobby-overlay { position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; padding:24px; }
+    .lobby-card { width:100%; max-width:440px; padding:40px 32px; border-radius:28px; text-align:center; }
+    .lobby-title { font-size:28px; font-weight:800; letter-spacing:-0.5px; margin-bottom:8px; }
+    .lobby-subtitle { font-size:13px; color:rgba(255,255,255,0.45); margin-bottom:32px; }
+    .lobby-tabs { display:flex; gap:4px; padding:4px; border-radius:14px; margin-bottom:28px; }
+    .lobby-tab { flex:1; padding:10px 0; border-radius:10px; font-size:13px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; cursor:pointer; border:none; background:transparent; color:rgba(255,255,255,0.4); transition:all 0.25s ease; }
+    .lobby-tab.active { background:rgba(255,255,255,1); color:#000; }
+    .room-code-display { font-family:'Source Serif 4',serif; font-size:36px; font-weight:700; letter-spacing:0.25em; padding:20px; margin-bottom:12px; }
+    .room-waiting { display:flex; align-items:center; justify-content:center; gap:8px; font-size:12px; letter-spacing:1px; text-transform:uppercase; color:rgba(255,255,255,0.4); margin-bottom:28px; }
+    .room-waiting-dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.4); animation:pulse-dot 1.5s ease-in-out infinite; }
+    @keyframes pulse-dot { 0%,100%{opacity:0.3;transform:scale(0.8);} 50%{opacity:1;transform:scale(1.2);} }
+    .room-code-input { width:100%; padding:16px; border-radius:14px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); backdrop-filter:blur(4px); font-size:22px; font-weight:700; letter-spacing:0.3em; text-transform:uppercase; text-align:center; color:white; outline:none; margin-bottom:28px; transition:border-color 0.2s ease; }
+    .room-code-input::placeholder { color:rgba(255,255,255,0.1); }
+    .room-code-input:focus { border-color:rgba(255,255,255,0.25); }
+    .lobby-btn-primary { width:100%; padding:16px; border-radius:16px; border:none; background:white; color:black; font-size:14px; font-weight:800; letter-spacing:1px; text-transform:uppercase; cursor:pointer; transition:transform 0.15s ease, opacity 0.15s ease; }
+    .lobby-btn-primary:hover { transform:scale(1.03); }
+    .lobby-btn-primary:active { transform:scale(0.97); }
+    .lobby-btn-primary:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+    .lobby-btn-secondary { width:100%; padding:14px; border-radius:16px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.03); color:white; font-size:13px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; cursor:pointer; margin-top:12px; transition:all 0.15s ease; }
+    .lobby-btn-secondary:hover { background:rgba(255,255,255,0.08); }
+    .lobby-error { font-size:13px; color:#ff5d73; margin-bottom:16px; min-height:20px; }
+    .pvp-stats { display:flex; gap:8px; align-items:center; }
+    .pvp-stat-box { display:flex; flex-direction:column; align-items:center; padding:6px 14px; border-radius:12px; min-width:64px; }
+    .pvp-stat-label { font-size:9px; font-weight:600; letter-spacing:1px; text-transform:uppercase; opacity:0.5; }
+    .pvp-stat-value { font-size:18px; font-weight:800; font-variant-numeric:tabular-nums; }
+    .pvp-stat-box.timer .pvp-stat-value { color:#ff5d73; }
+    .pvp-stat-box.opponent { border-color:rgba(255,93,115,0.3); }
+    .pvp-stat-box.opponent .pvp-stat-label { color:rgba(255,93,115,0.7); }
+    .modal-winner { font-size:26px; font-weight:800; margin:10px 0 16px; }
+    .modal-winner.victory { color:#2fbf71; }
+    .modal-winner.defeat { color:#ff5d73; }
+    .modal-scores { display:flex; flex-direction:column; gap:8px; margin:16px 0; }
+    .modal-score-row { display:flex; justify-content:space-between; padding:12px 16px; border-radius:10px; background:rgba(255,255,255,0.03); font-weight:600; font-size:14px; }
+    .modal-score-row.winner-row { background:rgba(47,191,113,0.1); border:1px solid rgba(47,191,113,0.25); }
   </style>
 </head>
 <body>
-  <!-- Matchmaking Screen -->
+  <!-- ROOM LOBBY SCREEN -->
   <div class="lobby-overlay" id="lobby-overlay">
+    <div class="game-page" style="position:absolute;inset:0;">
+      <video class="global-bg-video" autoplay loop muted playsinline>
+        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260315_073750_51473149-4350-4920-ae24-c8214286f323.mp4" type="video/mp4" />
+      </video>
+    </div>
     <div class="lobby-card liquid-glass-strong glass-border">
-      <div class="pulse-loader">
-        <div class="pulse-circle"></div>
-        <div class="pulse-core">
-          <span class="material-symbols-outlined" style="font-size: 38px;">sports_esports</span>
+      <h1 class="lobby-title">Multiplayer <em style="font-family:'Source Serif 4',serif;font-weight:400;opacity:0.8;">Arena</em></h1>
+      <p class="lobby-subtitle">Create a private room or join a friend with a code.</p>
+      <div class="lobby-tabs liquid-glass glass-border">
+        <button class="lobby-tab active" id="tab-create">Create Room</button>
+        <button class="lobby-tab" id="tab-join">Join Room</button>
+      </div>
+      <!-- Create Room View -->
+      <div id="view-create">
+        <div id="create-initial">
+          <div style="margin-bottom:28px;">
+            <div style="width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+              <span class="material-symbols-outlined" style="font-size:36px;">group_add</span>
+            </div>
+            <p style="font-size:13px;color:rgba(255,255,255,0.4);">Click below to create a private room. Share the code with your opponent!</p>
+          </div>
+          <button class="lobby-btn-primary" id="btn-create-room">Create Room</button>
+        </div>
+        <div id="create-waiting" style="display:none;">
+          <div class="room-code-display" id="room-code-text">WB-XXXX</div>
+          <div class="room-waiting">
+            <span class="room-waiting-dot"></span>
+            <span>Waiting for opponent to join...</span>
+          </div>
+          <button class="lobby-btn-secondary" id="btn-copy-code">
+            <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;margin-right:6px;">content_copy</span>Copy Code
+          </button>
+          <button class="lobby-btn-secondary" id="btn-cancel-room" style="border-color:rgba(255,93,115,0.3);color:#ff8b94;">Cancel Room</button>
         </div>
       </div>
-      <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 10px;">Finding Opponent</h2>
-      <p id="queue-status" style="color: rgba(255, 255, 255, 0.6); margin-bottom: 30px;">Searching for a word-blasting rival...</p>
-      <button class="btn-primary" id="btn-leave-queue" style="background: rgba(255, 93, 115, 0.2); border: 1px solid rgba(255, 93, 115, 0.4); color: #ff5d73;">Cancel Search</button>
+      <!-- Join Room View -->
+      <div id="view-join" style="display:none;">
+        <div style="width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+          <span class="material-symbols-outlined" style="font-size:36px;">login</span>
+        </div>
+        <input class="room-code-input" id="join-code-input" type="text" maxlength="7" placeholder="WB-XXXX" />
+        <div class="lobby-error" id="join-error"></div>
+        <button class="lobby-btn-primary" id="btn-join-room">Join Room</button>
+      </div>
+      <button class="lobby-btn-secondary" id="btn-back-menu" style="margin-top:16px;">
+        <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;margin-right:6px;">arrow_back</span>Back to Menu
+      </button>
     </div>
   </div>
 
-  <div class="game-page">
-    <!-- Background Video -->
+  <!-- GAME PAGE (Same design as single-player) -->
+  <div class="game-page" style="display:none;" id="game-page">
     <video class="global-bg-video" autoplay loop muted playsinline>
       <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260315_073750_51473149-4350-4920-ae24-c8214286f323.mp4" type="video/mp4" />
     </video>
-
-    <!-- Game UI -->
-    <main class="game-container" id="game-container" style="display: none;">
-      <!-- Multiplayer PVP HUD -->
-      <header class="game-header pvp-hud stagger-reveal" style="animation-delay: 0.1s;">
-        <!-- Left Side: Player -->
-        <div class="pvp-player">
-          <div class="pvp-meta">
-            <span id="p1-name">You</span>
-            <span class="pvp-score" id="p1-score">0</span>
-          </div>
-          <div class="pvp-progress">
-            <div class="pvp-progress-fill self" id="p1-progress-bar"></div>
+    <main class="game-container" id="game-container">
+      <header class="game-header stagger-reveal" style="animation-delay:0.1s;">
+        <div class="game-header-top">
+          <button class="btn-game-back liquid-glass glass-border" id="btn-back">
+            <span class="material-symbols-outlined">arrow_back</span>
+          </button>
+          <div class="pvp-stats">
+            <div class="pvp-stat-box liquid-glass glass-border">
+              <span class="pvp-stat-label" id="p1-label">You</span>
+              <span class="pvp-stat-value" id="p1-score">0</span>
+            </div>
+            <div class="pvp-stat-box liquid-glass glass-border timer">
+              <span class="pvp-stat-label">Timer</span>
+              <span class="pvp-stat-value" id="hud-timer">90</span>
+            </div>
+            <div class="pvp-stat-box liquid-glass glass-border opponent">
+              <span class="pvp-stat-label" id="p2-label">Opponent</span>
+              <span class="pvp-stat-value" id="p2-score">0</span>
+            </div>
           </div>
         </div>
-
-        <!-- Center: Timer -->
-        <div class="pvp-timer-box liquid-glass glass-border">
-          <span class="pvp-timer" id="hud-timer">90</span>
-        </div>
-
-        <!-- Right Side: Opponent -->
-        <div class="pvp-player opponent">
-          <div class="pvp-meta">
-            <span id="p2-name">Opponent</span>
-            <span class="pvp-score" id="p2-score">0</span>
+        <div class="game-progress">
+          <div class="progress-track liquid-glass glass-border">
+            <div class="progress-fill" id="progress-bar" style="width:0%;"></div>
           </div>
-          <div class="pvp-progress">
-            <div class="pvp-progress-fill opp" id="p2-progress-bar"></div>
+          <div class="progress-labels">
+            <span>Progress</span>
+            <span id="progress-text">0 / 0 words</span>
           </div>
         </div>
       </header>
-
-      <!-- Board Section -->
       <section class="game-board-section">
-        <!-- Floating Word Preview -->
         <div class="word-preview">
           <span class="word-preview-text" id="word-preview"></span>
         </div>
-
-        <!-- Letter Board -->
         <div class="letter-board liquid-glass-strong glass-border" id="board-area">
-          <!-- SVG Connection Layer -->
           <svg id="connection-svg">
             <path id="connection-path" class="line-glow" d="" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
           </svg>
-          <div class="letter-wheel" id="letter-wheel">
-            <!-- Injected by JS -->
-          </div>
+          <div class="letter-wheel" id="letter-wheel"></div>
         </div>
-
-        <!-- Found Words List -->
-        <div class="found-words-row" id="words-list">
-          <!-- Populated by JS -->
-        </div>
-
-        <!-- Opponent Word Broadcast area (subtle indicator) -->
-        <div class="pvp-goals-container" id="opponent-status-container" style="display: none; border-color: rgba(255, 93, 115, 0.2);">
-          <span style="font-size: 12px; color: #ff8b94;" id="opponent-status-text">Opponent is typing...</span>
-        </div>
+        <div class="found-words-row" id="words-list"></div>
       </section>
-
-      <!-- Actions -->
-      <div class="game-actions stagger-reveal" style="animation-delay: 0.3s;">
+      <div class="game-actions stagger-reveal" style="animation-delay:0.3s;">
         <button class="action-btn liquid-glass-strong glass-border" id="shuffle">
           <span class="material-symbols-outlined">refresh</span>
           <span class="action-btn-label">Shuffle</span>
@@ -278,40 +156,26 @@
           <span class="action-btn-label">Clear</span>
         </button>
       </div>
-
-      <!-- Footer -->
       <footer class="game-footer">
         <div class="game-footer-brand liquid-glass">WORD BLASTER ARENA</div>
         <div class="game-footer-info">
-          <span>Real-time Multiplayer Mode</span>
-          <span>Powered by Turso DB</span>
+          <span>Nox Shenk Creation</span>
+          <span>contact@noxshenk.studio</span>
+          <span>github.com/noxshenk</span>
         </div>
       </footer>
     </main>
-
-    <!-- Match Over Modal (PvP) -->
     <div class="modal-overlay" id="modal-overlay">
       <div class="modal-card">
-        <div class="modal-title" style="margin-bottom: 5px;">
-          Match
-          <span class="modal-title-italic" id="modal-title-text">Over!</span>
-        </div>
-        
-        <div class="modal-winner" id="modal-winner-announcement">Victory!</div>
-        
+        <div class="modal-title">Match <span class="modal-title-italic" id="modal-title-text">Over!</span></div>
+        <div class="modal-winner" id="modal-winner-text">Victory!</div>
         <div class="modal-summary-label">Results</div>
-        <div class="modal-scores" id="modal-scores-list">
-          <!-- Score items populated dynamically -->
-        </div>
-        
+        <div class="modal-scores" id="modal-scores-list"></div>
         <button class="btn-modal-primary" id="btn-return-menu">Return to Menu</button>
       </div>
     </div>
-
-    <!-- Toast -->
     <div id="toast"></div>
   </div>
-
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="levels.js"></script>
   <script src="dictionary.js"></script>

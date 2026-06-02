@@ -158,17 +158,81 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
 
 // --- Real-time Socket.io Gameplay Logic ---
 
-// Keeps track of players currently in queue waiting for a game
-let matchmakingQueue = [];
+// Room-code based rooms: roomCode -> { hostSocket, hostUsername, matchId, levelIndex }
+const pendingRooms = new Map();
 
 // Active matches state tracking
 const activeMatches = new Map();
+
+// Generate a random 6-char room code like "WB-A3X9"
+function generateRoomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed confusing chars (O,0,I,1)
+  let code = 'WB-';
+  for (let i = 0; i < 4; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  // Ensure uniqueness
+  if (pendingRooms.has(code)) return generateRoomCode();
+  return code;
+}
+
+function startMatch(roomCode, player1, player2) {
+  const matchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const levelIndex = Math.floor(Math.random() * 8);
+
+  // Put both sockets into a specific Socket.io Room
+  player1.socket.join(matchId);
+  player2.socket.join(matchId);
+
+  // Create active match details
+  const matchState = {
+    id: matchId,
+    roomCode,
+    players: {
+      [player1.socket.id]: { username: player1.username, score: 0, finished: false },
+      [player2.socket.id]: { username: player2.username, score: 0, finished: false }
+    }
+  };
+
+  activeMatches.set(matchId, matchState);
+
+  // Notify clients that match has started
+  player1.socket.emit('matchFound', {
+    matchId,
+    opponent: player2.username,
+    role: 'player1',
+    levelIndex
+  });
+
+  player2.socket.emit('matchFound', {
+    matchId,
+    opponent: player1.username,
+    role: 'player2',
+    levelIndex
+  });
+
+  console.log(`Match ${matchId} (Room: ${roomCode}) started between ${player1.username} and ${player2.username}`);
+
+  // Save match initialization in Turso DB (Async background)
+  db.execute({
+    sql: 'INSERT INTO matches (id, status) VALUES (?, ?)',
+    args: [matchId, 'active']
+  }).catch(err => console.error('Failed to log match init in DB:', err));
+
+  db.execute({
+    sql: 'INSERT INTO match_players (match_id, username, score) VALUES (?, ?, 0), (?, ?, 0)',
+    args: [matchId, player1.username, matchId, player2.username]
+  }).catch(err => console.error('Failed to log match players in DB:', err));
+
+  // Cleanup pending room
+  pendingRooms.delete(roomCode);
+}
 
 io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
   let authenticatedUser = null;
 
-  // Optional socket authentication
+  // Socket authentication
   socket.on('authenticate', (token) => {
     try {
       if (token) {
@@ -183,78 +247,52 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Join matchmaking queue
-  socket.on('joinQueue', () => {
+  // Create a new private room
+  socket.on('createRoom', () => {
     const username = authenticatedUser || `Guest_${socket.id.substring(0, 5)}`;
-    
-    // Check if socket is already in queue
-    if (matchmakingQueue.find(item => item.socket.id === socket.id)) {
-      return socket.emit('queueStatus', { message: 'Already in queue' });
-    }
+    const roomCode = generateRoomCode();
 
-    console.log(`${username} joined matchmaking queue`);
-    matchmakingQueue.push({ socket, username });
-    socket.emit('queueStatus', { message: 'Searching for an opponent...' });
+    pendingRooms.set(roomCode, {
+      hostSocket: socket,
+      hostUsername: username
+    });
 
-    // Matchmaking logic: pairs of 2
-    if (matchmakingQueue.length >= 2) {
-      const player1 = matchmakingQueue.shift();
-      const player2 = matchmakingQueue.shift();
-
-      const matchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Put both sockets into a specific Socket.io Room
-      player1.socket.join(matchId);
-      player2.socket.join(matchId);
-
-      // Create active match details
-      const matchState = {
-        id: matchId,
-        players: {
-          [player1.socket.id]: { username: player1.username, score: 0, finished: false },
-          [player2.socket.id]: { username: player2.username, score: 0, finished: false }
-        }
-      };
-
-      activeMatches.set(matchId, matchState);
-
-      const levelIndex = Math.floor(Math.random() * 8);
-
-      // Notify clients that match has started
-      player1.socket.emit('matchFound', {
-        matchId,
-        opponent: player2.username,
-        role: 'player1',
-        levelIndex
-      });
-
-      player2.socket.emit('matchFound', {
-        matchId,
-        opponent: player1.username,
-        role: 'player2',
-        levelIndex
-      });
-
-      console.log(`Match ${matchId} started between ${player1.username} and ${player2.username}`);
-
-      // Save match initialization in Turso DB (Async background)
-      db.execute({
-        sql: 'INSERT INTO matches (id, status) VALUES (?, ?)',
-        args: [matchId, 'active']
-      }).catch(err => console.error('Failed to log match init in DB:', err));
-
-      db.execute({
-        sql: 'INSERT INTO match_players (match_id, username, score) VALUES (?, ?, 0), (?, ?, 0)',
-        args: [matchId, player1.username, matchId, player2.username]
-      }).catch(err => console.error('Failed to log match players in DB:', err));
-    }
+    socket.emit('roomCreated', { roomCode });
+    console.log(`Room ${roomCode} created by ${username}`);
   });
 
-  // Cancel matchmaking queue
-  socket.on('leaveQueue', () => {
-    matchmakingQueue = matchmakingQueue.filter(item => item.socket.id !== socket.id);
-    socket.emit('queueStatus', { message: 'Idle' });
-    console.log(`Socket ${socket.id} left queue`);
+  // Join an existing room by code
+  socket.on('joinRoom', ({ roomCode }) => {
+    const username = authenticatedUser || `Guest_${socket.id.substring(0, 5)}`;
+    const upperCode = (roomCode || '').toUpperCase().trim();
+
+    const room = pendingRooms.get(upperCode);
+
+    if (!room) {
+      return socket.emit('roomError', { error: 'Room not found. Check the code and try again.' });
+    }
+
+    if (room.hostSocket.id === socket.id) {
+      return socket.emit('roomError', { error: 'You cannot join your own room!' });
+    }
+
+    console.log(`${username} joining room ${upperCode} hosted by ${room.hostUsername}`);
+
+    // Start the match between host and joiner
+    startMatch(upperCode, 
+      { socket: room.hostSocket, username: room.hostUsername },
+      { socket, username }
+    );
+  });
+
+  // Leave/cancel a created room
+  socket.on('leaveRoom', ({ roomCode }) => {
+    const upperCode = (roomCode || '').toUpperCase().trim();
+    const room = pendingRooms.get(upperCode);
+    if (room && room.hostSocket.id === socket.id) {
+      pendingRooms.delete(upperCode);
+      console.log(`Room ${upperCode} cancelled by host`);
+    }
   });
 
   // Handle score/gameplay updates
@@ -333,7 +371,6 @@ io.on('connection', (socket) => {
 
           // 3. Update player user profiles (games played, highscore) if registered users
           if (!p.username.startsWith('Guest_')) {
-            // Get current stats
             const userStats = await db.execute({
               sql: 'SELECT highscore, games_played FROM users WHERE username = ?',
               args: [p.username]
@@ -364,8 +401,13 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
     
-    // Remove from queue if they were in it
-    matchmakingQueue = matchmakingQueue.filter(item => item.socket.id !== socket.id);
+    // Remove any pending rooms created by this socket
+    for (const [code, room] of pendingRooms.entries()) {
+      if (room.hostSocket.id === socket.id) {
+        pendingRooms.delete(code);
+        console.log(`Pending room ${code} removed (host disconnected)`);
+      }
+    }
 
     // Handle abrupt disconnect during active game
     for (const [matchId, match] of activeMatches.entries()) {
