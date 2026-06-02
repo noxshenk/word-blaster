@@ -9,7 +9,17 @@
     return;
   }
 
-  var API_URL = window.location.origin;
+  var API_URL = 'https://word-blaster.onrender.com';
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    if (window.location.port === '3000') {
+      API_URL = window.location.origin;
+    } else {
+      API_URL = 'http://localhost:3000';
+    }
+  } else if (window.location.hostname.includes('onrender.com')) {
+    API_URL = window.location.origin;
+  }
+
   var playerName = localStorage.getItem('wb_player') || 'Player';
 
   // ============================================================
