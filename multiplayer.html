@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Word Blaster — Multiplayer Arena</title>
+  <meta name="description" content="Race against real-time opponents in the Word Blaster PvP Arena!" />
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,700;1,8..60,400;1,8..60,700&display=swap" rel="stylesheet" />
+  <!-- Material Symbols -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- Custom Styling to accommodate Multiplayer HUD and matchmaking screen -->
+  <style>
+    /* Matchmaking lobby screen */
+    .lobby-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(10, 10, 12, 0.95);
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 1;
+      transition: opacity 0.5s ease;
+    }
+    .lobby-card {
+      text-align: center;
+      padding: 40px;
+      max-width: 400px;
+      width: 90%;
+    }
+    .pulse-loader {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 30px;
+    }
+    .pulse-circle {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: var(--neon-cyan, #00f2fe);
+      opacity: 0.15;
+      animation: pulse-ring 2s cubic-bezier(0.215, 0.610, 0.355, 1) infinite;
+    }
+    .pulse-core {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--neon-cyan, #00f2fe), var(--neon-purple, #4facfe));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.65); opacity: 0.8; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    /* Multiplayer HUD */
+    .pvp-hud {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .pvp-player {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .pvp-player.opponent {
+      align-items: flex-end;
+    }
+    .pvp-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.7);
+    }
+    .pvp-player.opponent .pvp-meta {
+      flex-direction: row-reverse;
+    }
+    .pvp-score {
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .pvp-timer-box {
+      min-width: 70px;
+      text-align: center;
+      padding: 10px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(255, 93, 115, 0.15);
+    }
+    .pvp-timer {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--neon-red, #ff5d73);
+      font-variant-numeric: tabular-nums;
+    }
+    .pvp-progress {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .pvp-progress-fill {
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .pvp-progress-fill.self {
+      background: linear-gradient(90deg, #00f2fe, #4facfe);
+      box-shadow: 0 0 8px rgba(0, 242, 254, 0.5);
+    }
+    .pvp-progress-fill.opp {
+      background: linear-gradient(90deg, #ff5d73, #ff8b94);
+      box-shadow: 0 0 8px rgba(255, 93, 115, 0.5);
+    }
+
+    /* Target Words display modification for PvP */
+    .pvp-goals-container {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      text-align: center;
+    }
+    .pvp-goals-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(255, 255, 255, 0.4);
+      margin-bottom: 8px;
+    }
+
+    /* Modal customizations */
+    .modal-winner {
+      font-size: 28px;
+      font-weight: 800;
+      margin: 15px 0;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+    .modal-winner.victory {
+      color: #2fbf71;
+      text-shadow: 0 0 15px rgba(47, 191, 113, 0.4);
+    }
+    .modal-winner.defeat {
+      color: #ff5d73;
+      text-shadow: 0 0 15px rgba(255, 93, 115, 0.4);
+    }
+    .modal-scores {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .modal-score-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      font-weight: 600;
+    }
+    .modal-score-row.winner-row {
+      background: rgba(47, 191, 113, 0.1);
+      border: 1px solid rgba(47, 191, 113, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <!-- Matchmaking Screen -->
+  <div class="lobby-overlay" id="lobby-overlay">
+    <div class="lobby-card liquid-glass-strong glass-border">
+      <div class="pulse-loader">
+        <div class="pulse-circle"></div>
+        <div class="pulse-core">
+          <span class="material-symbols-outlined" style="font-size: 38px;">sports_esports</span>
+        </div>
+      </div>
+      <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 10px;">Finding Opponent</h2>
+      <p id="queue-status" style="color: rgba(255, 255, 255, 0.6); margin-bottom: 30px;">Searching for a word-blasting rival...</p>
+      <button class="btn-primary" id="btn-leave-queue" style="background: rgba(255, 93, 115, 0.2); border: 1px solid rgba(255, 93, 115, 0.4); color: #ff5d73;">Cancel Search</button>
+    </div>
+  </div>
+
+  <div class="game-page">
+    <!-- Background Video -->
+    <video class="global-bg-video" autoplay loop muted playsinline>
+      <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260315_073750_51473149-4350-4920-ae24-c8214286f323.mp4" type="video/mp4" />
+    </video>
+
+    <!-- Game UI -->
+    <main class="game-container" id="game-container" style="display: none;">
+      <!-- Multiplayer PVP HUD -->
+      <header class="game-header pvp-hud stagger-reveal" style="animation-delay: 0.1s;">
+        <!-- Left Side: Player -->
+        <div class="pvp-player">
+          <div class="pvp-meta">
+            <span id="p1-name">You</span>
+            <span class="pvp-score" id="p1-score">0</span>
+          </div>
+          <div class="pvp-progress">
+            <div class="pvp-progress-fill self" id="p1-progress-bar"></div>
+          </div>
+        </div>
+
+        <!-- Center: Timer -->
+        <div class="pvp-timer-box liquid-glass glass-border">
+          <span class="pvp-timer" id="hud-timer">90</span>
+        </div>
+
+        <!-- Right Side: Opponent -->
+        <div class="pvp-player opponent">
+          <div class="pvp-meta">
+            <span id="p2-name">Opponent</span>
+            <span class="pvp-score" id="p2-score">0</span>
+          </div>
+          <div class="pvp-progress">
+            <div class="pvp-progress-fill opp" id="p2-progress-bar"></div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Board Section -->
+      <section class="game-board-section">
+        <!-- Floating Word Preview -->
+        <div class="word-preview">
+          <span class="word-preview-text" id="word-preview"></span>
+        </div>
+
+        <!-- Letter Board -->
+        <div class="letter-board liquid-glass-strong glass-border" id="board-area">
+          <!-- SVG Connection Layer -->
+          <svg id="connection-svg">
+            <path id="connection-path" class="line-glow" d="" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+          <div class="letter-wheel" id="letter-wheel">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+
+        <!-- Found Words List -->
+        <div class="found-words-row" id="words-list">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Opponent Word Broadcast area (subtle indicator) -->
+        <div class="pvp-goals-container" id="opponent-status-container" style="display: none; border-color: rgba(255, 93, 115, 0.2);">
+          <span style="font-size: 12px; color: #ff8b94;" id="opponent-status-text">Opponent is typing...</span>
+        </div>
+      </section>
+
+      <!-- Actions -->
+      <div class="game-actions stagger-reveal" style="animation-delay: 0.3s;">
+        <button class="action-btn liquid-glass-strong glass-border" id="shuffle">
+          <span class="material-symbols-outlined">refresh</span>
+          <span class="action-btn-label">Shuffle</span>
+        </button>
+        <button class="action-btn liquid-glass-strong glass-border" id="clear">
+          <span class="material-symbols-outlined">close</span>
+          <span class="action-btn-label">Clear</span>
+        </button>
+      </div>
+
+      <!-- Footer -->
+      <footer class="game-footer">
+        <div class="game-footer-brand liquid-glass">WORD BLASTER ARENA</div>
+        <div class="game-footer-info">
+          <span>Real-time Multiplayer Mode</span>
+          <span>Powered by Turso DB</span>
+        </div>
+      </footer>
+    </main>
+
+    <!-- Match Over Modal (PvP) -->
+    <div class="modal-overlay" id="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-title" style="margin-bottom: 5px;">
+          Match
+          <span class="modal-title-italic" id="modal-title-text">Over!</span>
+        </div>
+        
+        <div class="modal-winner" id="modal-winner-announcement">Victory!</div>
+        
+        <div class="modal-summary-label">Results</div>
+        <div class="modal-scores" id="modal-scores-list">
+          <!-- Score items populated dynamically -->
+        </div>
+        
+        <button class="btn-modal-primary" id="btn-return-menu">Return to Menu</button>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast"></div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="levels.js"></script>
+  <script src="dictionary.js"></script>
+  <script src="multiplayer.js"></script>
+</body>
+</html>
