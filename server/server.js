@@ -181,9 +181,108 @@ function generateRoomCode() {
   return code;
 }
 
+// --- Datamuse Dynamic Word API Integration ---
+let commonWordsCache = null;
+let base5LetterWords = [];
+
+const FALLBACK_LEVELS = [
+  { base: 'CATS',  goals: ['CAT', 'CATS', 'ACTS', 'CAST'] },
+  { base: 'RAIN',  goals: ['RAIN', 'RAN', 'AIR', 'AIN'] },
+  { base: 'STAR',  goals: ['STAR', 'ARTS', 'RATS', 'TAR', 'ART'] },
+  { base: 'BLOW',  goals: ['BLOW', 'BOWL', 'LOW', 'OWL', 'BOW'] },
+  { base: 'PLANT', goals: ['PLANT', 'PLAN', 'PANT', 'TAP', 'NAP', 'ANT'] },
+  { base: 'SHINE', goals: ['SHINE', 'SHIN', 'HENS', 'HIS', 'SIN', 'HEN'] },
+  { base: 'STREAM', goals: ['STREAM', 'STEAM', 'TEARS', 'RATES', 'MEAT', 'STAR'] },
+  { base: 'GARDEN', goals: ['GARDEN', 'DANGER', 'RANGE', 'GRADE', 'READ', 'DEAR'] }
+];
+
+async function populateWordCache() {
+  try {
+    console.log('[Datamuse] Loading word lists from Datamuse...');
+    const lengths = [3, 4, 5];
+    const promises = lengths.map(len => {
+      const pattern = '?'.repeat(len);
+      return fetch(`https://api.datamuse.com/words?sp=${pattern}&max=1000&md=f`)
+        .then(r => r.json())
+        .then(data => {
+          return data.filter(item => {
+            const tag = item.tags ? item.tags.find(t => t.startsWith('f:')) : null;
+            const freq = tag ? parseFloat(tag.slice(2)) : 0;
+            // Filter out rare/obscure words to keep gameplay easy and daily-use
+            if (len === 3) return freq >= 2.0;
+            if (len === 4) return freq >= 1.0;
+            if (len === 5) return freq >= 0.5;
+            return false;
+          }).map(d => d.word.toUpperCase());
+        });
+    });
+
+    const results = await Promise.all(promises);
+    const words = results.flat();
+    commonWordsCache = new Set(words);
+    base5LetterWords = results[2].filter(w => /^[A-Z]+$/.test(w));
+    console.log(`[Datamuse] Cached ${commonWordsCache.size} common words. Found ${base5LetterWords.length} base 5-letter words.`);
+  } catch (err) {
+    console.error('[Datamuse] Failed to populate word cache on startup:', err.message);
+  }
+}
+
+function canBuild(word, base) {
+  const pool = {};
+  for (let i = 0; i < base.length; i++) {
+    const ch = base[i];
+    pool[ch] = (pool[ch] || 0) + 1;
+  }
+  for (let i = 0; i < word.length; i++) {
+    const ch = word[i];
+    if (!pool[ch]) return false;
+    pool[ch]--;
+  }
+  return true;
+}
+
+function generateDynamicLevel() {
+  if (!base5LetterWords || base5LetterWords.length === 0 || !commonWordsCache) {
+    console.log('[Datamuse] Cache not ready or empty. Using fallback levels.');
+    return FALLBACK_LEVELS[Math.floor(Math.random() * FALLBACK_LEVELS.length)];
+  }
+
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const base = base5LetterWords[Math.floor(Math.random() * base5LetterWords.length)];
+    
+    // Find all valid sub-words (3 to 5 letters) that can be built from the base word
+    const subWords = [];
+    for (const w of commonWordsCache) {
+      if (w.length >= 3 && w.length <= 5 && canBuild(w, base)) {
+        subWords.push(w);
+      }
+    }
+
+    // Ensure the base word itself is included in the goals
+    if (!subWords.includes(base)) {
+      subWords.push(base);
+    }
+
+    // Require at least 6 goal words
+    if (subWords.length >= 6) {
+      // Sort by length desc, then alphabetically
+      subWords.sort((a, b) => b.length - a.length || a.localeCompare(b));
+      
+      // Select exactly 6 goals
+      const goals = subWords.slice(0, 6);
+      
+      console.log(`[Datamuse] Generated dynamic level. Base: ${base}, Goals count: ${goals.length}`);
+      return { base, goals };
+    }
+  }
+
+  console.log('[Datamuse] Failed to generate dynamic level with min 6 goals after 50 attempts. Using fallback.');
+  return FALLBACK_LEVELS[Math.floor(Math.random() * FALLBACK_LEVELS.length)];
+}
+
 function startMatch(roomCode, player1, player2) {
   const matchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  const levelIndex = Math.floor(Math.random() * 8);
+  const levelData = generateDynamicLevel();
 
   // Put both sockets into a specific Socket.io Room
   player1.socket.join(matchId);
@@ -206,14 +305,14 @@ function startMatch(roomCode, player1, player2) {
     matchId,
     opponent: player2.username,
     role: 'player1',
-    levelIndex
+    levelData
   });
 
   player2.socket.emit('matchFound', {
     matchId,
     opponent: player1.username,
     role: 'player2',
-    levelIndex
+    levelData
   });
 
   console.log(`Match ${matchId} (Room: ${roomCode}) started between ${player1.username} and ${player2.username}`);
@@ -362,7 +461,7 @@ io.on('connection', (socket) => {
       try {
         // 1. Update match outcome
         await db.execute({
-          sql: 'UPDATE matches SET status = "completed", winner_username = ? WHERE id = ?',
+          sql: 'UPDATE matches SET status = \'completed\', winner_username = ? WHERE id = ?',
           args: [winnerUsername, matchId]
         });
 
@@ -431,7 +530,7 @@ io.on('connection', (socket) => {
 
           // Save forfeit results to DB
           db.execute({
-            sql: 'UPDATE matches SET status = "completed", winner_username = ? WHERE id = ?',
+            sql: 'UPDATE matches SET status = \'completed\', winner_username = ? WHERE id = ?',
             args: [opponent.username, matchId]
           }).catch(err => console.error('Failed to log forfeit in DB:', err));
         }
@@ -445,4 +544,5 @@ io.on('connection', (socket) => {
 // Run server
 server.listen(PORT, () => {
   console.log(`Word Blaster backend server running on http://localhost:${PORT}`);
+  populateWordCache();
 });

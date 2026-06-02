@@ -77,7 +77,7 @@
 
   var matchId = null;
   var opponentUsername = 'Opponent';
-  var levelIndex = 0;
+  var currentLevelData = null;
   var myScore = 0;
   var oppScore = 0;
   var letters = [];
@@ -94,7 +94,7 @@
   var timerInterval = null;
   var gameActive = false;
 
-  function currentLevel() { return LEVELS[levelIndex]; }
+  function currentLevel() { return currentLevelData; }
 
   // ============================================================
   // Socket.io Connection
@@ -165,7 +165,7 @@
     socket.on('matchFound', function (data) {
       matchId = data.matchId;
       opponentUsername = data.opponent;
-      levelIndex = data.levelIndex;
+      currentLevelData = data.levelData;
       p1Label.textContent = playerName;
       p2Label.textContent = data.opponent;
 

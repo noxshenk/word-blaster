@@ -44,9 +44,10 @@ const Dictionary = (function () {
     word = word.toUpperCase();
     if (word.length < 3) return false;
     if (!canBuild(word, letters)) return false;
+    // Always accept the level's defined goal words.
+    if (level && level.goals && level.goals.indexOf(word) !== -1) return true;
     if (words && words.size) return words.has(word);
-    // Fallback: accept the level's goal words only.
-    return level.goals.indexOf(word) !== -1;
+    return false;
   }
 
   return { load: load, isValid: isValid, isLoaded: function () { return loaded; } };
