@@ -288,7 +288,8 @@
     </div>
     <div id="toast"></div>
   </div>
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>if(typeof io==='undefined'){document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"><\/script>')}</script>
   <script src="levels.js"></script>
   <script src="dictionary.js"></script>
   <script src="multiplayer.js"></script>

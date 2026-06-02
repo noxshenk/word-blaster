@@ -9,7 +9,7 @@
     return;
   }
 
-  var API_URL = 'https://word-blaster.onrender.com';
+  var API_URL = window.location.origin;
   var playerName = localStorage.getItem('wb_player') || 'Player';
 
   // ============================================================

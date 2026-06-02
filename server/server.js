@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const path = require('path');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -12,7 +13,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*', // For local development, allow any origin. Configure appropriately for prod.
+    origin: '*',
     methods: ['GET', 'POST']
   }
 });
@@ -23,8 +24,12 @@ const JWT_SECRET = process.env.JWT_SECRET || 'word_blaster_secret_token_12345';
 app.use(cors());
 app.use(express.json());
 
+// Serve frontend static files from the parent directory
+app.use(express.static(path.join(__dirname, '..')));
+
 // Initialize Database schema
 initDatabase();
+
 
 // --- Authentication Middleware ---
 function authenticateToken(req, res, next) {
