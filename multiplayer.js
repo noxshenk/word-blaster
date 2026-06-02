@@ -1,303 +1,354 @@
 (function () {
   'use strict';
 
+  // ============================================================
+  // Auth Guard
+  // ============================================================
   if (!localStorage.getItem('wb_registered') || !localStorage.getItem('wb_token')) {
     window.location.href = 'index.html';
     return;
   }
 
-  const API_URL = 'https://word-blaster.onrender.com';
-  const playerName = localStorage.getItem('wb_player') || 'Player';
+  var API_URL = 'https://word-blaster.onrender.com';
+  var playerName = localStorage.getItem('wb_player') || 'Player';
 
   // ============================================================
-  // DOM: Lobby
+  // DOM References: Lobby
   // ============================================================
-  const lobbyOverlay = document.getElementById('lobby-overlay');
-  const tabCreate = document.getElementById('tab-create');
-  const tabJoin = document.getElementById('tab-join');
-  const viewCreate = document.getElementById('view-create');
-  const viewJoin = document.getElementById('view-join');
-  const createInitial = document.getElementById('create-initial');
-  const createWaiting = document.getElementById('create-waiting');
-  const roomCodeText = document.getElementById('room-code-text');
-  const btnCreateRoom = document.getElementById('btn-create-room');
-  const btnCopyCode = document.getElementById('btn-copy-code');
-  const btnCancelRoom = document.getElementById('btn-cancel-room');
-  const joinCodeInput = document.getElementById('join-code-input');
-  const joinError = document.getElementById('join-error');
-  const btnJoinRoom = document.getElementById('btn-join-room');
-  const btnBackMenu = document.getElementById('btn-back-menu');
+  var lobbyOverlay  = document.getElementById('lobby-overlay');
+  var tabCreate     = document.getElementById('tab-create');
+  var tabJoin       = document.getElementById('tab-join');
+  var viewCreate    = document.getElementById('view-create');
+  var viewJoin      = document.getElementById('view-join');
+  var createInitial = document.getElementById('create-initial');
+  var createWaiting = document.getElementById('create-waiting');
+  var roomCodeText  = document.getElementById('room-code-text');
+  var btnCreateRoom = document.getElementById('btn-create-room');
+  var btnCopyCode   = document.getElementById('btn-copy-code');
+  var btnCancelRoom = document.getElementById('btn-cancel-room');
+  var joinCodeInput = document.getElementById('join-code-input');
+  var joinError     = document.getElementById('join-error');
+  var btnJoinRoom   = document.getElementById('btn-join-room');
+  var btnBackMenu   = document.getElementById('btn-back-menu');
+  var connDot       = document.getElementById('conn-dot');
+  var connText      = document.getElementById('conn-text');
 
   // ============================================================
-  // DOM: Game
+  // DOM References: Game
   // ============================================================
-  const gamePage = document.getElementById('game-page');
-  const boardArea = document.getElementById('board-area');
-  const letterWheel = document.getElementById('letter-wheel');
-  const svgPath = document.getElementById('connection-path');
-  const previewEl = document.getElementById('word-preview');
+  var gamePage    = document.getElementById('game-page');
+  var boardArea   = document.getElementById('board-area');
+  var letterWheel = document.getElementById('letter-wheel');
+  var svgPath     = document.getElementById('connection-path');
+  var previewEl   = document.getElementById('word-preview');
 
-  const els = {
-    p1Label: document.getElementById('p1-label'),
-    p1Score: document.getElementById('p1-score'),
-    p2Label: document.getElementById('p2-label'),
-    p2Score: document.getElementById('p2-score'),
-    timer: document.getElementById('hud-timer'),
-    words: document.getElementById('words-list'),
-    toast: document.getElementById('toast'),
-    shuffle: document.getElementById('shuffle'),
-    clear: document.getElementById('clear'),
-    progressBar: document.getElementById('progress-bar'),
-    progressText: document.getElementById('progress-text'),
-    btnBack: document.getElementById('btn-back'),
-    modalOverlay: document.getElementById('modal-overlay'),
-    modalTitle: document.getElementById('modal-title-text'),
-    modalWinner: document.getElementById('modal-winner-text'),
-    modalScoresList: document.getElementById('modal-scores-list'),
-    btnReturnMenu: document.getElementById('btn-return-menu')
-  };
+  var p1Label       = document.getElementById('p1-label');
+  var p1Score       = document.getElementById('p1-score');
+  var p2Label       = document.getElementById('p2-label');
+  var p2Score       = document.getElementById('p2-score');
+  var hudTimer      = document.getElementById('hud-timer');
+  var wordsList     = document.getElementById('words-list');
+  var toastEl       = document.getElementById('toast');
+  var shuffleBtn    = document.getElementById('shuffle');
+  var clearBtn      = document.getElementById('clear');
+  var progressBar   = document.getElementById('progress-bar');
+  var progressText  = document.getElementById('progress-text');
+  var btnBack       = document.getElementById('btn-back');
+  var modalOverlay  = document.getElementById('modal-overlay');
+  var modalWinner   = document.getElementById('modal-winner-text');
+  var modalScores   = document.getElementById('modal-scores-list');
+  var btnReturnMenu = document.getElementById('btn-return-menu');
 
   // ============================================================
   // State
   // ============================================================
-  let currentRoomCode = null;
-  const state = {
-    matchId: null,
-    opponentUsername: 'Opponent',
-    levelIndex: 0,
-    score: 0,
-    opponentScore: 0,
-    letters: [],
-    letterNodes: [],
-    selection: [],
-    foundGoals: new Set(),
-    foundBonus: new Set(),
-    dragging: false,
-    mousePos: { x: 0, y: 0 },
-    timerLeft: 90,
-    timerInterval: null,
-    gameActive: false
-  };
+  var currentRoomCode = null;
+  var socketConnected = false;
 
-  function currentLevel() { return LEVELS[state.levelIndex]; }
+  var matchId = null;
+  var opponentUsername = 'Opponent';
+  var levelIndex = 0;
+  var myScore = 0;
+  var oppScore = 0;
+  var letters = [];
+  var letterNodes = [];
+  var selection = [];
+  var foundGoals = {};
+  var foundBonus = {};
+  var foundGoalCount = 0;
+  var foundBonusCount = 0;
+  var dragging = false;
+  var mouseX = 0;
+  var mouseY = 0;
+  var timerLeft = 90;
+  var timerInterval = null;
+  var gameActive = false;
+
+  function currentLevel() { return LEVELS[levelIndex]; }
 
   // ============================================================
   // Socket.io Connection
   // ============================================================
-  var socket = io(API_URL);
+  var socket = null;
 
-  socket.on('connect', function () {
-    var token = localStorage.getItem('wb_token');
-    socket.emit('authenticate', token);
-  });
+  function initSocket() {
+    if (typeof io === 'undefined') {
+      connText.textContent = 'Socket library failed to load';
+      return;
+    }
 
-  socket.on('authenticated', function (data) {
-    console.log('Authenticated as:', data.username);
-  });
+    socket = io(API_URL, {
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      timeout: 15000
+    });
 
-  socket.on('authError', function (data) {
-    toast(data.error, true);
-    setTimeout(function () {
+    socket.on('connect', function () {
+      socketConnected = true;
+      connDot.classList.add('connected');
+      connText.textContent = 'Connected';
+      var token = localStorage.getItem('wb_token');
+      if (token) socket.emit('authenticate', token);
+    });
+
+    socket.on('disconnect', function () {
+      socketConnected = false;
+      connDot.classList.remove('connected');
+      connText.textContent = 'Disconnected - reconnecting...';
+    });
+
+    socket.on('connect_error', function () {
+      socketConnected = false;
+      connDot.classList.remove('connected');
+      connText.textContent = 'Server waking up... please wait';
+    });
+
+    socket.on('authenticated', function (data) {
+      console.log('Authenticated as:', data.username);
+    });
+
+    socket.on('authError', function (data) {
+      toast(data.error, true);
       localStorage.removeItem('wb_registered');
       localStorage.removeItem('wb_token');
       window.location.href = 'index.html';
-    }, 2000);
-  });
+    });
+
+    // --- Room Events ---
+    socket.on('roomCreated', function (data) {
+      currentRoomCode = data.roomCode;
+      roomCodeText.textContent = data.roomCode;
+      createInitial.style.display = 'none';
+      createWaiting.style.display = '';
+      btnCreateRoom.disabled = false;
+      btnCreateRoom.textContent = 'CREATE ROOM';
+    });
+
+    socket.on('roomError', function (data) {
+      joinError.textContent = data.error;
+      btnJoinRoom.disabled = false;
+      btnJoinRoom.textContent = 'JOIN ROOM';
+    });
+
+    // --- Match Events ---
+    socket.on('matchFound', function (data) {
+      matchId = data.matchId;
+      opponentUsername = data.opponent;
+      levelIndex = data.levelIndex;
+      p1Label.textContent = playerName;
+      p2Label.textContent = data.opponent;
+
+      // Instant transition - no delay
+      lobbyOverlay.style.display = 'none';
+      gamePage.style.display = '';
+      bootGame();
+    });
+
+    socket.on('opponentUpdate', function (data) {
+      oppScore = data.score;
+      p2Score.textContent = data.score;
+      p2Score.style.transform = 'scale(1.25)';
+      setTimeout(function () { p2Score.style.transform = ''; }, 200);
+    });
+
+    socket.on('opponentFinished', function () {
+      toast(opponentUsername + ' finished!');
+    });
+
+    socket.on('opponentForfeit', function (data) {
+      gameActive = false;
+      clearInterval(timerInterval);
+      toast(data.message);
+      showEndModal(playerName, [
+        { username: playerName, score: myScore },
+        { username: opponentUsername, score: 'LEFT' }
+      ]);
+    });
+
+    socket.on('matchOver', function (data) {
+      gameActive = false;
+      clearInterval(timerInterval);
+      showEndModal(data.winner, data.scores);
+    });
+  }
 
   // ============================================================
-  // Lobby: Tab Switching
+  // Lobby: Tab Switching (instant, no socket needed)
   // ============================================================
-  tabCreate.addEventListener('click', function () {
+  tabCreate.onclick = function () {
     tabCreate.classList.add('active');
     tabJoin.classList.remove('active');
     viewCreate.style.display = '';
     viewJoin.style.display = 'none';
-  });
+  };
 
-  tabJoin.addEventListener('click', function () {
+  tabJoin.onclick = function () {
     tabJoin.classList.add('active');
     tabCreate.classList.remove('active');
     viewJoin.style.display = '';
     viewCreate.style.display = 'none';
     joinError.textContent = '';
-  });
+    joinCodeInput.focus();
+  };
 
   // ============================================================
   // Lobby: Create Room
   // ============================================================
-  btnCreateRoom.addEventListener('click', function () {
+  btnCreateRoom.onclick = function () {
+    if (!socket || !socketConnected) {
+      toast('Not connected to server yet. Please wait...', true);
+      return;
+    }
     socket.emit('createRoom');
     btnCreateRoom.disabled = true;
-    btnCreateRoom.textContent = 'Creating...';
-  });
+    btnCreateRoom.textContent = 'CREATING...';
+  };
 
-  socket.on('roomCreated', function (data) {
-    currentRoomCode = data.roomCode;
-    roomCodeText.textContent = data.roomCode;
-    createInitial.style.display = 'none';
-    createWaiting.style.display = '';
-    btnCreateRoom.disabled = false;
-    btnCreateRoom.textContent = 'Create Room';
-  });
-
-  btnCopyCode.addEventListener('click', function () {
+  btnCopyCode.onclick = function () {
     if (currentRoomCode) {
-      navigator.clipboard.writeText(currentRoomCode);
+      navigator.clipboard.writeText(currentRoomCode).catch(function () {});
       btnCopyCode.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;margin-right:6px;">check</span>Copied!';
       setTimeout(function () {
         btnCopyCode.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;margin-right:6px;">content_copy</span>Copy Code';
       }, 2000);
     }
-  });
+  };
 
-  btnCancelRoom.addEventListener('click', function () {
-    if (currentRoomCode) {
+  btnCancelRoom.onclick = function () {
+    if (currentRoomCode && socket) {
       socket.emit('leaveRoom', { roomCode: currentRoomCode });
       currentRoomCode = null;
     }
     createWaiting.style.display = 'none';
     createInitial.style.display = '';
-  });
+  };
 
   // ============================================================
   // Lobby: Join Room
   // ============================================================
-  btnJoinRoom.addEventListener('click', function () {
+  btnJoinRoom.onclick = function () {
     var code = joinCodeInput.value.toUpperCase().trim();
     if (!code) {
       joinError.textContent = 'Please enter a room code.';
       return;
     }
+    if (!socket || !socketConnected) {
+      joinError.textContent = 'Not connected to server yet. Please wait...';
+      return;
+    }
     joinError.textContent = '';
     btnJoinRoom.disabled = true;
-    btnJoinRoom.textContent = 'Joining...';
+    btnJoinRoom.textContent = 'JOINING...';
     socket.emit('joinRoom', { roomCode: code });
-  });
+  };
 
-  socket.on('roomError', function (data) {
-    joinError.textContent = data.error;
-    btnJoinRoom.disabled = false;
-    btnJoinRoom.textContent = 'Join Room';
-  });
+  // Enter key support on the input
+  joinCodeInput.onkeydown = function (e) {
+    if (e.key === 'Enter') btnJoinRoom.onclick();
+  };
 
   // ============================================================
-  // Lobby: Back to Menu
+  // Lobby: Back to Menu (instant, always works)
   // ============================================================
-  btnBackMenu.addEventListener('click', function () {
-    if (currentRoomCode) {
+  btnBackMenu.onclick = function () {
+    if (currentRoomCode && socket) {
       socket.emit('leaveRoom', { roomCode: currentRoomCode });
-      currentRoomCode = null;
     }
     window.location.href = 'menu.html';
-  });
+  };
 
   // ============================================================
-  // Match Found -> Transition to Game
+  // Game: Back button (instant)
   // ============================================================
-  socket.on('matchFound', function (data) {
-    state.matchId = data.matchId;
-    state.opponentUsername = data.opponent;
-    state.levelIndex = data.levelIndex;
+  btnBack.onclick = function () {
+    window.location.href = 'menu.html';
+  };
 
-    els.p1Label.textContent = playerName;
-    els.p2Label.textContent = data.opponent;
-
-    lobbyOverlay.style.opacity = '0';
-    lobbyOverlay.style.transition = 'opacity 0.4s ease';
-    setTimeout(function () {
-      lobbyOverlay.style.display = 'none';
-      gamePage.style.display = '';
-      bootGame();
-    }, 400);
-  });
-
-  // ============================================================
-  // Opponent Events
-  // ============================================================
-  socket.on('opponentUpdate', function (data) {
-    state.opponentScore = data.score;
-    els.p2Score.textContent = data.score;
-    els.p2Score.style.transform = 'scale(1.25)';
-    setTimeout(function () { els.p2Score.style.transform = 'scale(1)'; }, 200);
-  });
-
-  socket.on('opponentFinished', function () {
-    toast(state.opponentUsername + ' finished!');
-  });
-
-  socket.on('opponentForfeit', function (data) {
-    state.gameActive = false;
-    clearInterval(state.timerInterval);
-    toast(data.message);
-    showEndModal(playerName, [
-      { username: playerName, score: state.score },
-      { username: state.opponentUsername, score: 'LEFT' }
-    ]);
-  });
-
-  socket.on('matchOver', function (data) {
-    state.gameActive = false;
-    clearInterval(state.timerInterval);
-    showEndModal(data.winner, data.scores);
-  });
+  btnReturnMenu.onclick = function () {
+    window.location.href = 'menu.html';
+  };
 
   // ============================================================
   // Game Boot
   // ============================================================
   function bootGame() {
-    state.letters = currentLevel().base.split('');
-    for (var i = state.letters.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
-      var tmp = state.letters[i];
-      state.letters[i] = state.letters[j];
-      state.letters[j] = tmp;
-    }
-    state.selection = [];
-    state.foundGoals = new Set();
-    state.foundBonus = new Set();
-    state.score = 0;
-    state.opponentScore = 0;
-    els.p1Score.textContent = '0';
-    els.p2Score.textContent = '0';
+    var base = currentLevel().base;
+    letters = base.split('');
+    shuffle_array(letters);
+    selection = [];
+    foundGoals = {};
+    foundBonus = {};
+    foundGoalCount = 0;
+    foundBonusCount = 0;
+    myScore = 0;
+    oppScore = 0;
+    p1Score.textContent = '0';
+    p2Score.textContent = '0';
 
     createLetterNodes();
     renderWordList();
     updatePreview();
     updateProgress();
-    state.gameActive = true;
+    gameActive = true;
     startCountdown();
   }
 
+  function shuffle_array(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+  }
+
   function startCountdown() {
-    state.timerLeft = 90;
-    els.timer.textContent = state.timerLeft;
-    els.timer.style.color = '';
-    state.timerInterval = setInterval(function () {
-      state.timerLeft--;
-      els.timer.textContent = state.timerLeft;
-      if (state.timerLeft <= 10) {
-        els.timer.style.color = '#ff5d73';
-      }
-      if (state.timerLeft <= 0) {
-        clearInterval(state.timerInterval);
+    timerLeft = 90;
+    hudTimer.textContent = timerLeft;
+    hudTimer.style.color = '';
+    timerInterval = setInterval(function () {
+      timerLeft--;
+      hudTimer.textContent = timerLeft;
+      if (timerLeft <= 10) hudTimer.style.color = '#ff5d73';
+      if (timerLeft <= 0) {
+        clearInterval(timerInterval);
         finishGame();
       }
     }, 1000);
   }
 
   function finishGame() {
-    state.gameActive = false;
-    socket.emit('playerFinished', { matchId: state.matchId, finalScore: state.score });
+    gameActive = false;
+    if (socket) socket.emit('playerFinished', { matchId: matchId, finalScore: myScore });
     toast('Time up! Submitting score...');
   }
 
   // ============================================================
-  // Letter Nodes (same as single-player game.js)
+  // Letter Nodes
   // ============================================================
   function createLetterNodes() {
     letterWheel.innerHTML = '';
-    state.letterNodes = [];
-    var n = state.letters.length;
+    letterNodes = [];
+    var n = letters.length;
     var wheelRect = letterWheel.getBoundingClientRect();
     var wheelSize = wheelRect.width || 256;
     var nodeSize = window.innerWidth <= 480 ? 52 : 64;
@@ -305,62 +356,67 @@
     var cy = wheelSize / 2;
     var radius = (wheelSize / 2) - (nodeSize / 2) - 4;
 
-    state.letters.forEach(function (ch, i) {
-      var angle = (Math.PI * 2 * i) / n - Math.PI / 2;
-      var x = cx + radius * Math.cos(angle) - nodeSize / 2;
-      var y = cy + radius * Math.sin(angle) - nodeSize / 2;
-      var node = document.createElement('div');
-      node.className = 'letter-node glass-border';
-      node.setAttribute('data-index', i);
-      node.setAttribute('data-letter', ch);
-      node.textContent = ch;
-      node.style.left = x + 'px';
-      node.style.top = y + 'px';
-      node.style.opacity = '0';
-      node.style.transform = 'scale(0.5)';
-      setTimeout(function () {
-        node.style.opacity = '1';
-        node.style.transform = 'scale(1)';
-      }, 100 + i * 60);
-      letterWheel.appendChild(node);
-      state.letterNodes.push(node);
-    });
+    for (var i = 0; i < n; i++) {
+      (function (idx) {
+        var ch = letters[idx];
+        var angle = (Math.PI * 2 * idx) / n - Math.PI / 2;
+        var x = cx + radius * Math.cos(angle) - nodeSize / 2;
+        var y = cy + radius * Math.sin(angle) - nodeSize / 2;
+        var node = document.createElement('div');
+        node.className = 'letter-node glass-border';
+        node.setAttribute('data-index', idx);
+        node.setAttribute('data-letter', ch);
+        node.textContent = ch;
+        node.style.left = x + 'px';
+        node.style.top = y + 'px';
+        node.style.opacity = '0';
+        node.style.transform = 'scale(0.5)';
+        setTimeout(function () {
+          node.style.opacity = '1';
+          node.style.transform = 'scale(1)';
+        }, 80 + idx * 50);
+        letterWheel.appendChild(node);
+        letterNodes.push(node);
+      })(i);
+    }
     attachNodeEvents();
   }
 
   // ============================================================
-  // Input Handling (same as single-player)
+  // Input Handling
   // ============================================================
   function attachNodeEvents() {
-    state.letterNodes.forEach(function (node) {
-      node.addEventListener('mousedown', function (e) { e.preventDefault(); startSelection(e, node); });
-      node.addEventListener('mouseenter', function () { if (state.dragging) selectNode(node); });
-      node.addEventListener('touchstart', function (e) { e.preventDefault(); startSelection(e.touches[0], node); }, { passive: false });
-    });
+    for (var i = 0; i < letterNodes.length; i++) {
+      (function (node) {
+        node.onmousedown = function (e) { e.preventDefault(); startSelection(e, node); };
+        node.onmouseenter = function () { if (dragging) selectNode(node); };
+        node.ontouchstart = function (e) { e.preventDefault(); startSelection(e.touches[0], node); };
+      })(letterNodes[i]);
+    }
   }
 
   function startSelection(e, node) {
-    if (!state.gameActive) return;
-    state.dragging = true;
-    state.selection = [];
+    if (!gameActive) return;
+    dragging = true;
+    selection = [];
     selectNode(node);
     updateMousePos(e);
     updateSVGPath();
   }
 
   function selectNode(node) {
-    if (state.selection.indexOf(node) !== -1) return;
+    if (selection.indexOf(node) !== -1) return;
     node.classList.add('active');
-    state.selection.push(node);
+    selection.push(node);
     updatePreview();
     updateSVGPath();
-    if ('vibrate' in navigator) navigator.vibrate(10);
+    if (navigator.vibrate) navigator.vibrate(10);
   }
 
   function updateMousePos(e) {
     var rect = boardArea.getBoundingClientRect();
-    state.mousePos.x = e.clientX - rect.left;
-    state.mousePos.y = e.clientY - rect.top;
+    mouseX = e.clientX - rect.left;
+    mouseY = e.clientY - rect.top;
   }
 
   function getNodeCenter(node) {
@@ -370,13 +426,13 @@
   }
 
   function updateSVGPath() {
-    if (state.selection.length === 0) { svgPath.setAttribute('d', ''); return; }
+    if (selection.length === 0) { svgPath.setAttribute('d', ''); return; }
     var d = '';
-    state.selection.forEach(function (node, i) {
-      var center = getNodeCenter(node);
-      d += (i === 0 ? 'M ' : ' L ') + center.x + ' ' + center.y;
-    });
-    if (state.dragging) d += ' L ' + state.mousePos.x + ' ' + state.mousePos.y;
+    for (var i = 0; i < selection.length; i++) {
+      var c = getNodeCenter(selection[i]);
+      d += (i === 0 ? 'M ' : ' L ') + c.x + ' ' + c.y;
+    }
+    if (dragging) d += ' L ' + mouseX + ' ' + mouseY;
     svgPath.setAttribute('d', d);
   }
 
@@ -388,30 +444,36 @@
   }
 
   function currentString() {
-    return state.selection.map(function (node) { return node.getAttribute('data-letter'); }).join('');
+    var s = '';
+    for (var i = 0; i < selection.length; i++) {
+      s += selection[i].getAttribute('data-letter');
+    }
+    return s;
   }
 
   function endSelection() {
-    if (!state.dragging) return;
-    state.dragging = false;
+    if (!dragging) return;
+    dragging = false;
     if (currentString().length > 0) submitWord();
-    setTimeout(resetSelection, 100);
+    resetSelection();
   }
 
   function resetSelection() {
-    state.selection.forEach(function (n) { n.classList.remove('active'); });
-    state.selection = [];
+    for (var i = 0; i < selection.length; i++) selection[i].classList.remove('active');
+    selection = [];
     updatePreview();
     updateSVGPath();
   }
 
-  document.addEventListener('mousemove', function (e) { if (state.dragging) { updateMousePos(e); updateSVGPath(); } });
+  document.addEventListener('mousemove', function (e) {
+    if (dragging) { updateMousePos(e); updateSVGPath(); }
+  });
   document.addEventListener('touchmove', function (e) {
-    if (state.dragging) {
+    if (dragging) {
       var touch = e.touches[0];
       updateMousePos(touch);
       var el = document.elementFromPoint(touch.clientX, touch.clientY);
-      if (el && el.classList.contains('letter-node')) selectNode(el);
+      if (el && el.classList && el.classList.contains('letter-node')) selectNode(el);
       updateSVGPath();
       e.preventDefault();
     }
@@ -425,12 +487,17 @@
   function submitWord() {
     var word = currentString();
     if (word.length < 3) return;
-    if (state.foundGoals.has(word) || state.foundBonus.has(word)) { flash('bad'); toast('Already found', true); return; }
-    if (!Dictionary.isValid(word, currentLevel(), state.letters)) { flash('bad'); toast('Not a word', true); return; }
+    if (foundGoals[word] || foundBonus[word]) { flash('bad'); toast('Already found', true); return; }
+    if (!Dictionary.isValid(word, currentLevel(), letters)) { flash('bad'); toast('Not a word', true); return; }
 
-    var isGoal = currentLevel().goals.indexOf(word) !== -1;
-    if (isGoal) state.foundGoals.add(word);
-    else state.foundBonus.add(word);
+    var goals = currentLevel().goals;
+    var isGoal = false;
+    for (var i = 0; i < goals.length; i++) {
+      if (goals[i] === word) { isGoal = true; break; }
+    }
+
+    if (isGoal) { foundGoals[word] = true; foundGoalCount++; }
+    else { foundBonus[word] = true; foundBonusCount++; }
 
     var gain = word.length * 10 + (isGoal ? 0 : 5);
     addScore(gain);
@@ -442,47 +509,46 @@
     boardArea.classList.add('animate-success');
     setTimeout(function () { boardArea.classList.remove('animate-success'); }, 400);
 
-    socket.emit('gameUpdate', { matchId: state.matchId, score: state.score, wordsTyped: state.foundGoals.size });
+    if (socket) socket.emit('gameUpdate', { matchId: matchId, score: myScore, wordsTyped: foundGoalCount });
 
-    if (state.foundGoals.size >= currentLevel().goals.length) {
-      state.gameActive = false;
-      clearInterval(state.timerInterval);
+    if (foundGoalCount >= currentLevel().goals.length) {
+      gameActive = false;
+      clearInterval(timerInterval);
       toast('All words found! Submitting...');
-      socket.emit('playerFinished', { matchId: state.matchId, finalScore: state.score });
+      if (socket) socket.emit('playerFinished', { matchId: matchId, finalScore: myScore });
     }
   }
 
   function addScore(n) {
-    state.score += n;
-    els.p1Score.textContent = state.score;
-    els.p1Score.style.transform = 'scale(1.25)';
-    setTimeout(function () { els.p1Score.style.transform = 'scale(1)'; }, 200);
+    myScore += n;
+    p1Score.textContent = myScore;
+    p1Score.style.transform = 'scale(1.25)';
+    setTimeout(function () { p1Score.style.transform = ''; }, 200);
   }
 
   function updateProgress() {
     var total = currentLevel().goals.length;
-    var found = state.foundGoals.size;
-    var pct = total ? (found / total) * 100 : 0;
-    els.progressBar.style.width = pct + '%';
-    els.progressText.textContent = found + ' / ' + total + ' words';
+    var pct = total ? (foundGoalCount / total) * 100 : 0;
+    progressBar.style.width = pct + '%';
+    progressText.textContent = foundGoalCount + ' / ' + total + ' words';
   }
 
   function renderWordList() {
     var goals = currentLevel().goals.slice().sort(function (a, b) { return a.length - b.length || a.localeCompare(b); });
-    els.words.innerHTML = '';
-    goals.forEach(function (w) {
+    wordsList.innerHTML = '';
+    for (var i = 0; i < goals.length; i++) {
+      var w = goals[i];
       var pill = document.createElement('div');
-      var found = state.foundGoals.has(w);
       pill.className = 'word-pill liquid-glass glass-border';
-      if (found) { pill.classList.add('found'); pill.textContent = w; }
+      if (foundGoals[w]) { pill.classList.add('found'); pill.textContent = w; }
       else { pill.classList.add('unfound'); pill.textContent = '...'; }
-      els.words.appendChild(pill);
-    });
-    if (state.foundBonus.size) {
+      wordsList.appendChild(pill);
+    }
+    if (foundBonusCount > 0) {
       var bonusPill = document.createElement('div');
       bonusPill.className = 'word-pill bonus liquid-glass glass-border';
-      bonusPill.textContent = '+' + state.foundBonus.size + ' bonus';
-      els.words.appendChild(bonusPill);
+      bonusPill.textContent = '+' + foundBonusCount + ' bonus';
+      wordsList.appendChild(bonusPill);
     }
   }
 
@@ -492,12 +558,13 @@
   function showEndModal(winner, scores) {
     var isSelf = winner === playerName;
     var isTie = winner === 'Tie';
-    if (isTie) { els.modalWinner.textContent = "It's a Tie!"; els.modalWinner.className = 'modal-winner'; }
-    else if (isSelf) { els.modalWinner.textContent = 'VICTORY!'; els.modalWinner.className = 'modal-winner victory'; }
-    else { els.modalWinner.textContent = 'DEFEAT'; els.modalWinner.className = 'modal-winner defeat'; }
+    if (isTie) { modalWinner.textContent = "It's a Tie!"; modalWinner.className = 'modal-winner'; }
+    else if (isSelf) { modalWinner.textContent = 'VICTORY!'; modalWinner.className = 'modal-winner victory'; }
+    else { modalWinner.textContent = 'DEFEAT'; modalWinner.className = 'modal-winner defeat'; }
 
-    els.modalScoresList.innerHTML = '';
-    scores.forEach(function (p) {
+    modalScores.innerHTML = '';
+    for (var i = 0; i < scores.length; i++) {
+      var p = scores[i];
       var row = document.createElement('div');
       row.className = 'modal-score-row' + (p.username === winner ? ' winner-row' : '');
       var nameSpan = document.createElement('span');
@@ -506,42 +573,40 @@
       scoreSpan.textContent = p.score;
       row.appendChild(nameSpan);
       row.appendChild(scoreSpan);
-      els.modalScoresList.appendChild(row);
-    });
-    els.modalOverlay.classList.add('visible');
+      modalScores.appendChild(row);
+    }
+    modalOverlay.classList.add('visible');
   }
-
-  els.btnReturnMenu.addEventListener('click', function () { window.location.href = 'menu.html'; });
-  els.btnBack.addEventListener('click', function () { window.location.href = 'menu.html'; });
 
   // ============================================================
   // Helpers
   // ============================================================
   function flash(kind) {
-    if (kind === 'good') previewEl.style.color = '#2fbf71';
-    else previewEl.style.color = '#ff5d73';
+    previewEl.style.color = kind === 'good' ? '#2fbf71' : '#ff5d73';
     setTimeout(function () { previewEl.style.color = ''; }, 300);
   }
 
   var toastTimer;
   function toast(msg, isErr) {
-    els.toast.textContent = msg;
-    els.toast.classList.toggle('err', !!isErr);
-    els.toast.classList.add('show');
+    toastEl.textContent = msg;
+    toastEl.classList.toggle('err', !!isErr);
+    toastEl.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { els.toast.classList.remove('show'); }, 1500);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 1500);
   }
 
-  els.shuffle.addEventListener('click', function () {
-    for (var i = state.letters.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
-      var tmp = state.letters[i]; state.letters[i] = state.letters[j]; state.letters[j] = tmp;
-    }
+  shuffleBtn.onclick = function () {
+    shuffle_array(letters);
     createLetterNodes();
     resetSelection();
-  });
+  };
 
-  els.clear.addEventListener('click', resetSelection);
+  clearBtn.onclick = resetSelection;
 
+  // ============================================================
+  // Init
+  // ============================================================
   Dictionary.load();
+  initSocket();
+
 })();

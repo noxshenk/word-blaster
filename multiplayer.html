@@ -9,57 +9,166 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <style>
-    .lobby-overlay { position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; padding:24px; }
-    .lobby-card { width:100%; max-width:440px; padding:40px 32px; border-radius:28px; text-align:center; }
-    .lobby-title { font-size:28px; font-weight:800; letter-spacing:-0.5px; margin-bottom:8px; }
-    .lobby-subtitle { font-size:13px; color:rgba(255,255,255,0.45); margin-bottom:32px; }
-    .lobby-tabs { display:flex; gap:4px; padding:4px; border-radius:14px; margin-bottom:28px; }
-    .lobby-tab { flex:1; padding:10px 0; border-radius:10px; font-size:13px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; cursor:pointer; border:none; background:transparent; color:rgba(255,255,255,0.4); transition:all 0.25s ease; }
-    .lobby-tab.active { background:rgba(255,255,255,1); color:#000; }
-    .room-code-display { font-family:'Source Serif 4',serif; font-size:36px; font-weight:700; letter-spacing:0.25em; padding:20px; margin-bottom:12px; }
-    .room-waiting { display:flex; align-items:center; justify-content:center; gap:8px; font-size:12px; letter-spacing:1px; text-transform:uppercase; color:rgba(255,255,255,0.4); margin-bottom:28px; }
-    .room-waiting-dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.4); animation:pulse-dot 1.5s ease-in-out infinite; }
-    @keyframes pulse-dot { 0%,100%{opacity:0.3;transform:scale(0.8);} 50%{opacity:1;transform:scale(1.2);} }
-    .room-code-input { width:100%; padding:16px; border-radius:14px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); backdrop-filter:blur(4px); font-size:22px; font-weight:700; letter-spacing:0.3em; text-transform:uppercase; text-align:center; color:white; outline:none; margin-bottom:28px; transition:border-color 0.2s ease; }
-    .room-code-input::placeholder { color:rgba(255,255,255,0.1); }
-    .room-code-input:focus { border-color:rgba(255,255,255,0.25); }
-    .lobby-btn-primary { width:100%; padding:16px; border-radius:16px; border:none; background:white; color:black; font-size:14px; font-weight:800; letter-spacing:1px; text-transform:uppercase; cursor:pointer; transition:transform 0.15s ease, opacity 0.15s ease; }
-    .lobby-btn-primary:hover { transform:scale(1.03); }
-    .lobby-btn-primary:active { transform:scale(0.97); }
-    .lobby-btn-primary:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
-    .lobby-btn-secondary { width:100%; padding:14px; border-radius:16px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.03); color:white; font-size:13px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; cursor:pointer; margin-top:12px; transition:all 0.15s ease; }
-    .lobby-btn-secondary:hover { background:rgba(255,255,255,0.08); }
-    .lobby-error { font-size:13px; color:#ff5d73; margin-bottom:16px; min-height:20px; }
-    .pvp-stats { display:flex; gap:8px; align-items:center; }
-    .pvp-stat-box { display:flex; flex-direction:column; align-items:center; padding:6px 14px; border-radius:12px; min-width:64px; }
-    .pvp-stat-label { font-size:9px; font-weight:600; letter-spacing:1px; text-transform:uppercase; opacity:0.5; }
-    .pvp-stat-value { font-size:18px; font-weight:800; font-variant-numeric:tabular-nums; }
-    .pvp-stat-box.timer .pvp-stat-value { color:#ff5d73; }
-    .pvp-stat-box.opponent { border-color:rgba(255,93,115,0.3); }
-    .pvp-stat-box.opponent .pvp-stat-label { color:rgba(255,93,115,0.7); }
-    .modal-winner { font-size:26px; font-weight:800; margin:10px 0 16px; }
-    .modal-winner.victory { color:#2fbf71; }
-    .modal-winner.defeat { color:#ff5d73; }
-    .modal-scores { display:flex; flex-direction:column; gap:8px; margin:16px 0; }
-    .modal-score-row { display:flex; justify-content:space-between; padding:12px 16px; border-radius:10px; background:rgba(255,255,255,0.03); font-weight:600; font-size:14px; }
-    .modal-score-row.winner-row { background:rgba(47,191,113,0.1); border:1px solid rgba(47,191,113,0.25); }
+    /* ===== Lobby Background ===== */
+    .lobby-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      background: #0a0a0a;
+      pointer-events: none;
+    }
+    .lobby-bg video {
+      width: 100%; height: 100%; object-fit: cover; opacity: 0.5;
+    }
+
+    /* ===== Room Lobby Overlay ===== */
+    .lobby-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .lobby-card {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 440px;
+      padding: 40px 32px;
+      border-radius: 28px;
+      text-align: center;
+    }
+    .lobby-title { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
+    .lobby-subtitle { font-size: 13px; color: rgba(255,255,255,0.45); margin-bottom: 32px; }
+
+    /* Connection Status */
+    .lobby-connection {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
+      margin-bottom: 20px; color: rgba(255,255,255,0.35);
+    }
+    .lobby-connection-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: #ff5d73;
+      transition: background 0.3s ease;
+    }
+    .lobby-connection-dot.connected { background: #2fbf71; }
+
+    /* Toggle Tabs */
+    .lobby-tabs { display: flex; gap: 4px; padding: 4px; border-radius: 14px; margin-bottom: 28px; }
+    .lobby-tab {
+      flex: 1; padding: 10px 0; border-radius: 10px; font-size: 13px; font-weight: 700;
+      letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; border: none;
+      background: transparent; color: rgba(255,255,255,0.4); transition: all 0.25s ease;
+    }
+    .lobby-tab.active { background: rgba(255,255,255,1); color: #000; }
+
+    /* Room Code Display (Create Mode) */
+    .room-code-display {
+      font-family: 'Source Serif 4', serif; font-size: 36px; font-weight: 700;
+      letter-spacing: 0.25em; padding: 20px; margin-bottom: 12px;
+    }
+    .room-waiting {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      font-size: 12px; letter-spacing: 1px; text-transform: uppercase;
+      color: rgba(255,255,255,0.4); margin-bottom: 28px;
+    }
+    .room-waiting-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.4);
+      animation: pulse-dot 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100% { opacity: 0.3; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    /* Room Code Input (Join Mode) */
+    .room-code-input {
+      width: 100%; padding: 16px; border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(4px); font-size: 22px; font-weight: 700;
+      letter-spacing: 0.3em; text-transform: uppercase; text-align: center;
+      color: white; outline: none; margin-bottom: 28px; transition: border-color 0.2s ease;
+    }
+    .room-code-input::placeholder { color: rgba(255,255,255,0.15); letter-spacing: 0.2em; }
+    .room-code-input:focus { border-color: rgba(255,255,255,0.25); }
+
+    /* Lobby Buttons */
+    .lobby-btn-primary {
+      width: 100%; padding: 16px; border-radius: 16px; border: none;
+      background: white; color: black; font-size: 14px; font-weight: 800;
+      letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+    .lobby-btn-primary:hover { transform: scale(1.03); }
+    .lobby-btn-primary:active { transform: scale(0.97); }
+    .lobby-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .lobby-btn-secondary {
+      width: 100%; padding: 14px; border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.03);
+      color: white; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;
+      text-transform: uppercase; cursor: pointer; margin-top: 12px; transition: all 0.15s ease;
+    }
+    .lobby-btn-secondary:hover { background: rgba(255,255,255,0.08); }
+
+    .lobby-error { font-size: 13px; color: #ff5d73; margin-bottom: 16px; min-height: 20px; }
+
+    /* ===== PvP Header Stats ===== */
+    .pvp-stats { display: flex; gap: 8px; align-items: center; }
+    .pvp-stat-box {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 6px 14px; border-radius: 12px; min-width: 64px;
+    }
+    .pvp-stat-label {
+      font-size: 9px; font-weight: 600; letter-spacing: 1px;
+      text-transform: uppercase; opacity: 0.5;
+    }
+    .pvp-stat-value { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; transition: transform 0.15s ease; }
+    .pvp-stat-box.timer .pvp-stat-value { color: #ff5d73; }
+    .pvp-stat-box.opponent { border-color: rgba(255, 93, 115, 0.3); }
+    .pvp-stat-box.opponent .pvp-stat-label { color: rgba(255, 93, 115, 0.7); }
+
+    /* ===== Modal PvP ===== */
+    .modal-winner { font-size: 26px; font-weight: 800; margin: 10px 0 16px; }
+    .modal-winner.victory { color: #2fbf71; }
+    .modal-winner.defeat { color: #ff5d73; }
+    .modal-scores { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+    .modal-score-row {
+      display: flex; justify-content: space-between; padding: 12px 16px;
+      border-radius: 10px; background: rgba(255,255,255,0.03); font-weight: 600; font-size: 14px;
+    }
+    .modal-score-row.winner-row { background: rgba(47,191,113,0.1); border: 1px solid rgba(47,191,113,0.25); }
   </style>
 </head>
 <body>
   <!-- ROOM LOBBY SCREEN -->
   <div class="lobby-overlay" id="lobby-overlay">
-    <div class="game-page" style="position:absolute;inset:0;">
-      <video class="global-bg-video" autoplay loop muted playsinline>
+    <!-- Background (pointer-events:none so it doesn't block clicks) -->
+    <div class="lobby-bg">
+      <video autoplay loop muted playsinline>
         <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260315_073750_51473149-4350-4920-ae24-c8214286f323.mp4" type="video/mp4" />
       </video>
     </div>
+
     <div class="lobby-card liquid-glass-strong glass-border">
       <h1 class="lobby-title">Multiplayer <em style="font-family:'Source Serif 4',serif;font-weight:400;opacity:0.8;">Arena</em></h1>
       <p class="lobby-subtitle">Create a private room or join a friend with a code.</p>
+
+      <!-- Connection indicator -->
+      <div class="lobby-connection">
+        <span class="lobby-connection-dot" id="conn-dot"></span>
+        <span id="conn-text">Connecting...</span>
+      </div>
+
+      <!-- Tabs: Create / Join -->
       <div class="lobby-tabs liquid-glass glass-border">
         <button class="lobby-tab active" id="tab-create">Create Room</button>
         <button class="lobby-tab" id="tab-join">Join Room</button>
       </div>
+
       <!-- Create Room View -->
       <div id="view-create">
         <div id="create-initial">
@@ -83,6 +192,7 @@
           <button class="lobby-btn-secondary" id="btn-cancel-room" style="border-color:rgba(255,93,115,0.3);color:#ff8b94;">Cancel Room</button>
         </div>
       </div>
+
       <!-- Join Room View -->
       <div id="view-join" style="display:none;">
         <div style="width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
@@ -92,6 +202,8 @@
         <div class="lobby-error" id="join-error"></div>
         <button class="lobby-btn-primary" id="btn-join-room">Join Room</button>
       </div>
+
+      <!-- Back to Menu -->
       <button class="lobby-btn-secondary" id="btn-back-menu" style="margin-top:16px;">
         <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;margin-right:6px;">arrow_back</span>Back to Menu
       </button>
