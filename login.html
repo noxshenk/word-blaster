@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Word Blaster — Log In</title>
   <meta name="description" content="Log in to your Word Blaster player account and join the arena." />
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#0a0a1a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Word Blaster" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192x192.png" />
   <!-- Google Fonts: Inter -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <!-- Material Symbols -->
@@ -190,5 +197,8 @@
       window.location.href = 'menu.html';
     }
   </script>
+
+  <!-- PWA Service Worker Registration -->
+  <script src="pwa-register.js"></script>
 </body>
 </html>

@@ -1,0 +1,67 @@
+{
+  "name": "Word Blaster",
+  "short_name": "WordBlaster",
+  "description": "Challenge yourself through word puzzles or compete head-to-head in real-time multiplayer battles.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0a0a1a",
+  "background_color": "#000000",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Play Single Player",
+      "short_name": "Single",
+      "url": "./levels.html",
+      "description": "Jump straight into single-player mode",
+      "icons": [
+        {
+          "src": "icons/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Multiplayer Arena",
+      "short_name": "Arena",
+      "url": "./multiplayer.html",
+      "description": "Enter the multiplayer arena",
+      "icons": [
+        {
+          "src": "icons/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}

@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Word Blaster — Create Account</title>
   <meta name="description" content="Create your Word Blaster player account and join the leaderboard." />
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#0a0a1a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Word Blaster" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192x192.png" />
   <!-- Google Fonts: Inter -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <!-- Material Symbols -->
@@ -234,5 +241,25 @@
       window.location.href = 'menu.html';
     }
   </script>
+
+  <!-- PWA Install Banner -->
+  <div class="pwa-install-banner" id="pwa-install-banner" style="display: none;">
+    <div class="pwa-install-banner-icon">
+      <span class="material-symbols-outlined">bolt</span>
+    </div>
+    <div class="pwa-install-banner-content">
+      <div class="pwa-install-banner-title">Install Word Blaster</div>
+      <div class="pwa-install-banner-desc">Add to home screen for instant access & offline play</div>
+    </div>
+    <div class="pwa-install-banner-actions">
+      <button class="pwa-install-btn" id="pwa-install-btn" style="display: none;" onclick="window.triggerPWAInstall()">Install</button>
+      <button class="pwa-dismiss-btn" onclick="this.closest('.pwa-install-banner').style.display='none'">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- PWA Service Worker Registration -->
+  <script src="pwa-register.js"></script>
 </body>
 </html>
