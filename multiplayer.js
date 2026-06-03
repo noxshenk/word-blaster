@@ -60,6 +60,7 @@
   var wordsList     = document.getElementById('words-list');
   var toastEl       = document.getElementById('toast');
   var shuffleBtn    = document.getElementById('shuffle');
+  var hintBtn       = document.getElementById('hint');
   var clearBtn      = document.getElementById('clear');
   var progressBar   = document.getElementById('progress-bar');
   var progressText  = document.getElementById('progress-text');
@@ -85,6 +86,7 @@
   var selection = [];
   var foundGoals = {};
   var foundBonus = {};
+  var revealed = {};
   var foundGoalCount = 0;
   var foundBonusCount = 0;
   var dragging = false;
@@ -309,6 +311,7 @@
     selection = [];
     foundGoals = {};
     foundBonus = {};
+    revealed = {};
     foundGoalCount = 0;
     foundBonusCount = 0;
     myScore = 0;
@@ -550,8 +553,16 @@
       var w = goals[i];
       var pill = document.createElement('div');
       pill.className = 'word-pill liquid-glass glass-border';
-      if (foundGoals[w]) { pill.classList.add('found'); pill.textContent = w; }
-      else { pill.classList.add('unfound'); pill.textContent = '...'; }
+      if (foundGoals[w]) {
+        pill.classList.add('found');
+        pill.textContent = w;
+      } else if (revealed[w]) {
+        pill.classList.add('unfound');
+        pill.textContent = w[0] + '·'.repeat(w.length - 1);
+      } else {
+        pill.classList.add('unfound');
+        pill.textContent = '...';
+      }
       wordsList.appendChild(pill);
     }
     if (foundBonusCount > 0) {
@@ -605,11 +616,34 @@
     toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 1500);
   }
 
+  // ============================================================
+  // Hint
+  // ============================================================
+  function useHint() {
+    if (!gameActive) return;
+    var goals = currentLevel().goals;
+    var remaining = [];
+    for (var i = 0; i < goals.length; i++) {
+      var w = goals[i];
+      if (!foundGoals[w]) remaining.push(w);
+    }
+    if (!remaining.length) { toast('All words found!'); return; }
+    remaining.sort(function (a, b) { return a.length - b.length; });
+    var word = remaining[0];
+    revealed[word] = true;
+    addScore(-15);
+    toast('Hint: ' + word[0] + '… (' + word.length + ' letters)');
+    renderWordList();
+    if (socket) socket.emit('gameUpdate', { matchId: matchId, score: myScore, wordsTyped: foundGoalCount });
+  }
+
   shuffleBtn.onclick = function () {
     shuffle_array(letters);
     createLetterNodes();
     resetSelection();
   };
+
+  hintBtn.onclick = useHint;
 
   clearBtn.onclick = resetSelection;
 
