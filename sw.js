@@ -3,9 +3,9 @@
 // Strategy: Cache First for static assets, Network First for API
 // ============================================================
 
-const CACHE_NAME = 'word-blaster-v1';
-const STATIC_CACHE = 'word-blaster-static-v1';
-const DYNAMIC_CACHE = 'word-blaster-dynamic-v1';
+const CACHE_NAME = 'word-blaster-v2';
+const STATIC_CACHE = 'word-blaster-static-v2';
+const DYNAMIC_CACHE = 'word-blaster-dynamic-v2';
 
 // Core app shell files that must be cached for offline support
 const APP_SHELL = [
@@ -23,6 +23,8 @@ const APP_SHELL = [
   './multiplayer.js',
   './words.txt',
   './manifest.json',
+  './audio-manager.js',
+  './song/JVKE - golden hour _instrumental_.mp3',
   './icons/icon-192x192.png',
   './icons/icon-512x512.png'
 ];
