@@ -1524,3 +1524,69 @@ input { font-family: inherit; }
   }
 }
 
+/* --- Music Toggle Button ------------------------------------ */
+.music-toggle-btn {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: rgba(26, 26, 26, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+.music-toggle-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.1) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.music-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
+}
+.music-toggle-btn:active {
+  transform: scale(0.95);
+}
+.music-toggle-btn .material-symbols-outlined {
+  font-size: 22px;
+}
+
+@media (max-width: 768px) {
+  .music-toggle-btn {
+    top: 16px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+  }
+  /* On mobile game pages, position next to square back button (width 44px) */
+  .game-page .music-toggle-btn {
+    top: 16px;
+    left: 76px;
+    right: auto;
+  }
+  /* On mobile levels selection page, position next to wider back button (width ~130px) */
+  .levels-page .music-toggle-btn {
+    top: 16px;
+    left: 164px;
+    right: auto;
+  }
+}
+
+
