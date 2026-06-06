@@ -168,20 +168,6 @@
         localStorage.setItem('wb_best', data.highscore || 0);
         localStorage.setItem('wb_registered', 'true');
 
-        // Fetch profile data (name_tag, profile_pic) so menu has it immediately
-        try {
-          const profileRes = await fetch(`${API_URL}/profile`, {
-            headers: { 'Authorization': 'Bearer ' + data.token }
-          });
-          const profileData = await profileRes.json();
-          if (profileData && !profileData.error) {
-            if (profileData.name_tag) localStorage.setItem('wb_player_tag', profileData.name_tag);
-            if (profileData.profile_pic) localStorage.setItem('wb_player_pic', profileData.profile_pic);
-          }
-        } catch (profileErr) {
-          console.warn('Could not pre-fetch profile data:', profileErr);
-        }
-
         // Success notification
         notification.textContent = 'Access granted! Welcome to the Arena.';
         notification.style.backgroundColor = 'rgba(76, 175, 80, 0.2)';

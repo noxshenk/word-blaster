@@ -40,6 +40,21 @@ async function initDatabase() {
     for (const stmt of statements) {
       await db.execute(stmt);
     }
+
+    try {
+      await db.execute('ALTER TABLE users ADD COLUMN name_tag TEXT');
+      console.log("Added name_tag column to users table");
+    } catch (e) {
+      // Already exists
+    }
+
+    try {
+      await db.execute("ALTER TABLE users ADD COLUMN profile_pic TEXT DEFAULT 'p1.png'");
+      console.log("Added profile_pic column to users table");
+    } catch (e) {
+      // Already exists
+    }
+
     console.log("Database initialized successfully!");
   } catch (error) {
     console.error("Failed to initialize database:", error);

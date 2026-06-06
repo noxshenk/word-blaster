@@ -9,16 +9,12 @@
     return;
   }
 
-  var API_URL = 'https://word-blaster.onrender.com';
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    if (window.location.port === '3000') {
-      API_URL = window.location.origin;
-    } else {
-      API_URL = 'http://localhost:3000';
+  var API_URL = (function() {
+    if (window.location.hostname.includes('onrender.com')) {
+      return window.location.origin;
     }
-  } else if (window.location.hostname.includes('onrender.com')) {
-    API_URL = window.location.origin;
-  }
+    return 'http://localhost:3000';
+  })();
 
   var playerName = localStorage.getItem('wb_player') || 'Player';
 
@@ -138,6 +134,8 @@
 
     socket.on('authenticated', function (data) {
       console.log('Authenticated as:', data.username);
+      if (data.name_tag) localStorage.setItem('wb_player_tag', data.name_tag);
+      if (data.profile_pic) localStorage.setItem('wb_player_pic', data.profile_pic);
     });
 
     socket.on('authError', function (data) {
@@ -168,8 +166,15 @@
       matchId = data.matchId;
       opponentUsername = data.opponent;
       currentLevelData = data.levelData;
-      p1Label.textContent = playerName;
-      p2Label.textContent = data.opponent;
+      
+      var myTag = localStorage.getItem('wb_player_tag') || ('@' + playerName.replace(/\s/g, ''));
+      var myPic = localStorage.getItem('wb_player_pic') || 'p1.png';
+
+      p1Label.textContent = myTag;
+      document.getElementById('p1-pic').src = 'wb profile images/' + myPic;
+
+      p2Label.textContent = data.opponentTag || ('@' + data.opponent.replace(/\s/g, ''));
+      document.getElementById('p2-pic').src = 'wb profile images/' + (data.opponentPic || 'p1.png');
 
       // Instant transition - no delay
       lobbyOverlay.style.display = 'none';

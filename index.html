@@ -186,9 +186,6 @@
         localStorage.setItem('wb_player', loginData.username);
         localStorage.setItem('wb_best', loginData.highscore || 0);
         localStorage.setItem('wb_registered', 'true');
-        // Set default profile values for new accounts
-        localStorage.setItem('wb_player_tag', '@' + loginData.username.replace(/\s/g, ''));
-        localStorage.setItem('wb_player_pic', 'p1.png');
 
         // Success notification
         notification.textContent = 'Account created! Welcome to the Arena.';

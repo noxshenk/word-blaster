@@ -24,8 +24,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'word_blaster_secret_token_12345';
 app.use(cors());
 app.use(express.json());
 
-// Serve frontend static files from the parent directory
-app.use(express.static(path.join(__dirname, '..')));
+// Serve frontend static files from the parent directory with automatic HTML extension resolution
+app.use(express.static(path.join(__dirname, '..'), { extensions: ['html'] }));
 
 // Initialize Database schema
 initDatabase();
@@ -53,6 +53,10 @@ app.post('/api/register', async (req, res) => {
 
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required' });
+  }
+
+  if (username.includes('@')) {
+    return res.status(400).json({ error: 'Username cannot contain the @ symbol' });
   }
 
   try {
@@ -145,7 +149,7 @@ app.get('/api/leaderboard', async (req, res) => {
 app.get('/api/profile', authenticateToken, async (req, res) => {
   try {
     const result = await db.execute({
-      sql: 'SELECT username, highscore, games_played, created_at FROM users WHERE id = ?',
+      sql: 'SELECT username, highscore, games_played, name_tag, profile_pic, created_at FROM users WHERE id = ?',
       args: [req.user.id]
     });
     
@@ -157,6 +161,31 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Profile fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch user profile' });
+  }
+});
+
+// 5. Update User Profile (Protected)
+app.post('/api/profile/update', authenticateToken, async (req, res) => {
+  const { name_tag, profile_pic } = req.body;
+  
+  if (!name_tag || !name_tag.startsWith('@') || name_tag.length < 2 || name_tag.includes(' ')) {
+    return res.status(400).json({ error: 'Name tag must start with @ and contain no spaces' });
+  }
+  
+  const validPics = Array.from({ length: 20 }, (_, i) => `p${i + 1}.png`);
+  if (!profile_pic || !validPics.includes(profile_pic)) {
+    return res.status(400).json({ error: 'Invalid profile picture selection' });
+  }
+
+  try {
+    await db.execute({
+      sql: 'UPDATE users SET name_tag = ?, profile_pic = ? WHERE id = ?',
+      args: [name_tag, profile_pic, req.user.id]
+    });
+    res.json({ message: 'Profile updated successfully!', name_tag, profile_pic });
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
   }
 });
 
@@ -208,10 +237,10 @@ async function populateWordCache() {
           return data.filter(item => {
             const tag = item.tags ? item.tags.find(t => t.startsWith('f:')) : null;
             const freq = tag ? parseFloat(tag.slice(2)) : 0;
-            // Filter out rare/obscure words to keep gameplay easy and daily-use
-            if (len === 3) return freq >= 2.0;
-            if (len === 4) return freq >= 1.0;
-            if (len === 5) return freq >= 0.5;
+            // Filter out rare/obscure words to keep gameplay easy, daily-use, and highly recognizable (Wordle/Scrabble-like)
+            if (len === 3) return freq >= 4.0;
+            if (len === 4) return freq >= 2.5;
+            if (len === 5) return freq >= 5.0;
             return false;
           }).map(d => d.word.toUpperCase());
         });
@@ -241,6 +270,67 @@ function canBuild(word, base) {
   return true;
 }
 
+function selectDiverseGoals(subWords, base, targetCount = 6) {
+  const groups = {};
+  for (const w of subWords) {
+    const firstLetter = w[0];
+    if (!groups[firstLetter]) groups[firstLetter] = [];
+    groups[firstLetter].push(w);
+  }
+
+  for (const letter in groups) {
+    groups[letter].sort((a, b) => b.length - a.length || a.localeCompare(b));
+  }
+
+  const selected = [];
+  if (subWords.includes(base)) {
+    selected.push(base);
+    const firstLetter = base[0];
+    groups[firstLetter] = groups[firstLetter].filter(w => w !== base);
+  }
+
+  const letterCounts = {};
+  for (const w of selected) {
+    letterCounts[w[0]] = (letterCounts[w[0]] || 0) + 1;
+  }
+
+  const letters = Object.keys(groups);
+  let added = true;
+
+  // Pass 1: Limit words starting with same letter to < 2
+  while (selected.length < targetCount && added) {
+    added = false;
+    for (const letter of letters) {
+      if (selected.length >= targetCount) break;
+      if (groups[letter].length > 0 && (letterCounts[letter] || 0) < 2) {
+        const nextWord = groups[letter].shift();
+        selected.push(nextWord);
+        letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+        added = true;
+      }
+    }
+  }
+
+  // Pass 2: Fallback to fill the rest of the goals
+  if (selected.length < targetCount) {
+    added = true;
+    while (selected.length < targetCount && added) {
+      added = false;
+      for (const letter of letters) {
+        if (selected.length >= targetCount) break;
+        if (groups[letter].length > 0) {
+          const nextWord = groups[letter].shift();
+          selected.push(nextWord);
+          added = true;
+        }
+      }
+    }
+  }
+
+  selected.sort((a, b) => b.length - a.length || a.localeCompare(b));
+  return selected;
+}
+
 function generateDynamicLevel() {
   if (!base5LetterWords || base5LetterWords.length === 0 || !commonWordsCache) {
     console.log('[Datamuse] Cache not ready or empty. Using fallback levels.');
@@ -265,11 +355,7 @@ function generateDynamicLevel() {
 
     // Require at least 6 goal words
     if (subWords.length >= 6) {
-      // Sort by length desc, then alphabetically
-      subWords.sort((a, b) => b.length - a.length || a.localeCompare(b));
-      
-      // Select exactly 6 goals
-      const goals = subWords.slice(0, 6);
+      const goals = selectDiverseGoals(subWords, base, 6);
       
       console.log(`[Datamuse] Generated dynamic level. Base: ${base}, Goals count: ${goals.length}`);
       return { base, goals };
@@ -304,6 +390,8 @@ function startMatch(roomCode, player1, player2) {
   player1.socket.emit('matchFound', {
     matchId,
     opponent: player2.username,
+    opponentTag: player2.socket.userData ? player2.socket.userData.name_tag : `@${player2.username}`,
+    opponentPic: player2.socket.userData ? player2.socket.userData.profile_pic : 'p1.png',
     role: 'player1',
     levelData
   });
@@ -311,6 +399,8 @@ function startMatch(roomCode, player1, player2) {
   player2.socket.emit('matchFound', {
     matchId,
     opponent: player1.username,
+    opponentTag: player1.socket.userData ? player1.socket.userData.name_tag : `@${player1.username}`,
+    opponentPic: player1.socket.userData ? player1.socket.userData.profile_pic : 'p1.png',
     role: 'player2',
     levelData
   });
@@ -337,13 +427,33 @@ io.on('connection', (socket) => {
   let authenticatedUser = null;
 
   // Socket authentication
-  socket.on('authenticate', (token) => {
+  socket.on('authenticate', async (token) => {
     try {
       if (token) {
         const decoded = jwt.verify(token, JWT_SECRET);
         authenticatedUser = decoded.username;
-        console.log(`Socket ${socket.id} authenticated as user: ${authenticatedUser}`);
-        socket.emit('authenticated', { username: authenticatedUser });
+        
+        const result = await db.execute({
+          sql: 'SELECT username, name_tag, profile_pic FROM users WHERE id = ?',
+          args: [decoded.id]
+        });
+        
+        if (result.rows.length > 0) {
+          const user = result.rows[0];
+          socket.userData = {
+            username: user.username,
+            name_tag: user.name_tag || `@${user.username.replace(/\s/g, '')}`,
+            profile_pic: user.profile_pic || 'p1.png'
+          };
+          console.log(`Socket ${socket.id} authenticated as user: ${authenticatedUser} (${socket.userData.name_tag})`);
+          socket.emit('authenticated', { 
+            username: socket.userData.username,
+            name_tag: socket.userData.name_tag,
+            profile_pic: socket.userData.profile_pic
+          });
+        } else {
+          socket.emit('authenticated', { username: authenticatedUser });
+        }
       }
     } catch (err) {
       console.log(`Authentication failed on socket ${socket.id}:`, err.message);
@@ -354,6 +464,13 @@ io.on('connection', (socket) => {
   // Create a new private room
   socket.on('createRoom', () => {
     const username = authenticatedUser || `Guest_${socket.id.substring(0, 5)}`;
+    if (!socket.userData) {
+      socket.userData = {
+        username: username,
+        name_tag: `@${username.replace(/\s/g, '')}`,
+        profile_pic: 'p1.png'
+      };
+    }
     const roomCode = generateRoomCode();
 
     pendingRooms.set(roomCode, {
@@ -368,6 +485,13 @@ io.on('connection', (socket) => {
   // Join an existing room by code
   socket.on('joinRoom', ({ roomCode }) => {
     const username = authenticatedUser || `Guest_${socket.id.substring(0, 5)}`;
+    if (!socket.userData) {
+      socket.userData = {
+        username: username,
+        name_tag: `@${username.replace(/\s/g, '')}`,
+        profile_pic: 'p1.png'
+      };
+    }
     const upperCode = (roomCode || '').toUpperCase().trim();
 
     const room = pendingRooms.get(upperCode);
