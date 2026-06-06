@@ -45,7 +45,7 @@
             </div>
             <div class="mode-info">
               <h2 class="mode-title">Single Player</h2>
-              <p class="mode-desc">Challenge yourself through 8 levels of word puzzles. Find all hidden words to progress.</p>
+              <p class="mode-desc">Challenge yourself through 100 levels of word puzzles. Find all hidden words to progress.</p>
             </div>
             <div class="mode-meta">
               <div class="mode-stat">
@@ -99,11 +99,13 @@
       <!-- Player Info Bar -->
       <div class="menu-player-bar stagger-reveal" style="animation-delay: 0.5s;">
         <div class="player-info liquid-glass glass-border">
-          <div class="player-avatar">
-            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1; font-size: 20px;">person</span>
+          <div class="player-avatar" id="menu-avatar-wrap" style="width: 32px; height: 32px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.1); cursor: pointer;" title="Tap to change avatar">
+            <img id="menu-avatar-img" src="wb%20profile%20images/p1.png" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+            <span id="menu-avatar-fallback" class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1; font-size: 20px;">person</span>
           </div>
           <div class="player-details">
             <span class="player-name" id="player-name">Player</span>
+            <span class="player-tag" id="player-tag" style="font-size: 10px; opacity: 0.5; display: block; font-family: monospace; cursor: pointer; text-decoration: underline dotted rgba(255,255,255,0.3);" title="Tap to change name tag">@player</span>
             <span class="player-score" id="player-score">Score: 0</span>
           </div>
           <button class="player-logout" id="btn-logout" title="Sign out">
@@ -125,6 +127,65 @@
   </div>
 
   <script src="levels.js"></script>
+
+  <!-- AVATAR SELECTOR MODAL -->
+  <div class="modal-overlay" id="avatar-modal-overlay" style="display: none; position: fixed; inset: 0; z-index: 1000; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+    <div class="modal-card liquid-glass-strong glass-border" style="width: 100%; max-width: 400px; padding: 32px; border-radius: 24px; text-align: center; display: flex; flex-direction: column; gap: 20px; box-sizing: border-box; color: white;">
+      <h2 style="margin: 0; font-size: 22px; font-weight: 800;">Choose Avatar</h2>
+      <p style="font-size: 12px; color: rgba(255,255,255,0.4); margin: 0;">Tap any picture to set it as your profile photo</p>
+      
+      <div id="avatar-pic-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; max-height: 220px; overflow-y: auto; padding: 4px; border-radius: 12px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05);">
+        <!-- Populated by JS -->
+      </div>
+      
+      <button id="btn-close-avatar-modal" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.03); color: white; font-size: 13px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all 0.2s;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- NAME TAG CHANGER MODAL -->
+  <div class="modal-overlay" id="nametag-modal-overlay" style="display: none; position: fixed; inset: 0; z-index: 1000; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+    <div class="modal-card liquid-glass-strong glass-border" style="width: 100%; max-width: 400px; padding: 32px; border-radius: 24px; text-align: left; display: flex; flex-direction: column; gap: 20px; box-sizing: border-box; color: white;">
+      <h2 style="margin: 0; font-size: 22px; font-weight: 800; text-align: center;">Change Name Tag</h2>
+      
+      <div id="nametag-modal-error" style="display: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; background: rgba(255,93,115,0.15); color: #ff5d73; border: 1px solid rgba(255,93,115,0.25);"></div>
+      
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: rgba(255,255,255,0.4);">New Name Tag (starts with @)</label>
+        <input id="nametag-input" type="text" placeholder="@tag_name" style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; font-size: 14px; font-weight: 600; box-sizing: border-box; transition: border-color 0.2s;" />
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; gap: 12px; margin-top: 10px;">
+        <button id="btn-cancel-nametag" style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.03); color: white; font-size: 13px; font-weight: 700; text-transform: uppercase; cursor: pointer;">Cancel</button>
+        <button id="btn-save-nametag" style="flex: 1; padding: 12px; border-radius: 12px; border: none; background: white; color: black; font-size: 13px; font-weight: 800; text-transform: uppercase; cursor: pointer;">Save</button>
+      </div>
+
+      <!-- Instruction -->
+      <p style="font-size: 11px; color: rgba(255,255,255,0.45); margin: 0; line-height: 1.4; text-align: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 14px;">
+        This name tag will be shown in the game as your name. You cannot change your registration username.
+      </p>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- PWA Install Banner -->
+  <div class="pwa-install-banner" id="pwa-install-banner" style="display: none;">
+    <div class="pwa-install-banner-icon">
+      <span class="material-symbols-outlined">bolt</span>
+    </div>
+    <div class="pwa-install-banner-content">
+      <div class="pwa-install-banner-title">Install Word Blaster</div>
+      <div class="pwa-install-banner-desc">Add to home screen for instant access & offline play</div>
+    </div>
+    <div class="pwa-install-banner-actions">
+      <button class="pwa-install-btn" id="pwa-install-btn" style="display: none;" onclick="window.triggerPWAInstall()">Install</button>
+      <button class="pwa-dismiss-btn" onclick="this.closest('.pwa-install-banner').style.display='none'">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+  </div>
+
   <script>
     (function () {
       'use strict';
@@ -144,6 +205,55 @@
       document.getElementById('player-name').textContent = playerName;
       document.getElementById('player-score').textContent = 'Best: ' + bestScore;
       document.getElementById('menu-greeting').textContent = 'Welcome back, ' + playerName.split(' ')[0];
+
+      // Local UI update helper
+      function updateProfileUI(username, tag, picName) {
+        document.getElementById('player-name').textContent = username;
+        document.getElementById('player-tag').textContent = tag;
+        
+        const avatarImg = document.getElementById('menu-avatar-img');
+        const avatarFallback = document.getElementById('menu-avatar-fallback');
+        if (picName) {
+          avatarImg.src = `wb%20profile%20images/${picName}`;
+          avatarImg.style.display = 'block';
+          avatarFallback.style.display = 'none';
+        } else {
+          avatarImg.style.display = 'none';
+          avatarFallback.style.display = 'block';
+        }
+      }
+
+      // Load initial cached profile or fetch from server
+      var cachedTag = localStorage.getItem('wb_player_tag') || ('@' + playerName.replace(/\s/g, ''));
+      var cachedPic = localStorage.getItem('wb_player_pic') || 'p1.png';
+      updateProfileUI(playerName, cachedTag, cachedPic);
+
+      var token = localStorage.getItem('wb_token');
+      var API_URL = (function() {
+        if (window.location.hostname.includes('onrender.com')) {
+          return window.location.origin;
+        }
+        return 'http://localhost:3000';
+      })();
+
+      if (token) {
+        fetch(API_URL + '/api/profile', {
+          headers: {
+            'Authorization': 'Bearer ' + token
+          }
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data && !data.error) {
+            var tagVal = data.name_tag || cachedTag;
+            var picVal = data.profile_pic || cachedPic;
+            localStorage.setItem('wb_player_tag', tagVal);
+            localStorage.setItem('wb_player_pic', picVal);
+            updateProfileUI(data.username || playerName, tagVal, picVal);
+          }
+        })
+        .catch(err => console.error('Failed to sync profile:', err));
+      }
 
       // Level stats
       document.getElementById('sp-levels').textContent = LEVELS.length + ' Levels';
@@ -174,29 +284,185 @@
         localStorage.removeItem('wb_registered');
         localStorage.removeItem('wb_token');
         localStorage.removeItem('wb_player');
+        localStorage.removeItem('wb_player_tag');
+        localStorage.removeItem('wb_player_pic');
         localStorage.removeItem('wb_best');
         window.location.href = 'index.html';
       });
+
+      // --- Profile settings modal logic ---
+      const avatarGrid = document.getElementById('avatar-pic-grid');
+      
+      // Populate avatar grid
+      for (let i = 1; i <= 20; i++) {
+        const picName = `p${i}.png`;
+        const img = document.createElement('img');
+        img.src = `wb%20profile%20images/${picName}`;
+        img.style.cssText = 'width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 12px; border: 2px solid transparent; cursor: pointer; transition: all 0.2s; box-sizing: border-box;';
+        img.setAttribute('data-pic', picName);
+        
+        img.addEventListener('click', function () {
+          // Highlight selected
+          const prev = avatarGrid.querySelector('.selected-avatar');
+          if (prev) {
+            prev.classList.remove('selected-avatar');
+            prev.style.borderColor = 'transparent';
+            prev.style.boxShadow = 'none';
+          }
+          img.classList.add('selected-avatar');
+          img.style.borderColor = 'white';
+          img.style.boxShadow = '0 0 10px rgba(255, 255, 255, 0.4)';
+          
+          // Save instantly on click
+          saveAvatar(picName);
+        });
+        
+        avatarGrid.appendChild(img);
+      }
+
+      function saveAvatar(picName) {
+        const currentTag = localStorage.getItem('wb_player_tag') || ('@' + playerName);
+        
+        fetch(API_URL + '/api/profile/update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({
+            name_tag: currentTag,
+            profile_pic: picName
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.error) {
+            toast(data.error, true);
+          } else {
+            localStorage.setItem('wb_player_pic', picName);
+            updateProfileUI(playerName, currentTag, picName);
+            document.getElementById('avatar-modal-overlay').style.display = 'none';
+            toast('Avatar updated!');
+          }
+        })
+        .catch(err => {
+          toast('Failed to save avatar', true);
+        });
+      }
+
+      // Triggers and Overlays
+      const avatarTrigger = document.getElementById('menu-avatar-wrap');
+      const tagTrigger = document.getElementById('player-tag');
+      const avatarOverlay = document.getElementById('avatar-modal-overlay');
+      const nametagOverlay = document.getElementById('nametag-modal-overlay');
+      const btnCloseAvatarModal = document.getElementById('btn-close-avatar-modal');
+      const btnCancelNametag = document.getElementById('btn-cancel-nametag');
+      const btnSaveNametag = document.getElementById('btn-save-nametag');
+      const nametagInput = document.getElementById('nametag-input');
+      const nametagError = document.getElementById('nametag-modal-error');
+
+      // 1. Avatar Modal Trigger
+      avatarTrigger.addEventListener('click', function () {
+        const currentPic = localStorage.getItem('wb_player_pic') || 'p1.png';
+        const avatars = avatarGrid.querySelectorAll('img');
+        avatars.forEach(function (img) {
+          const pic = img.getAttribute('data-pic');
+          if (pic === currentPic) {
+            img.style.borderColor = 'white';
+            img.style.boxShadow = '0 0 10px rgba(255, 255, 255, 0.4)';
+            img.classList.add('selected-avatar');
+          } else {
+            img.style.borderColor = 'transparent';
+            img.style.boxShadow = 'none';
+            img.classList.remove('selected-avatar');
+          }
+        });
+        avatarOverlay.style.display = 'flex';
+      });
+
+      btnCloseAvatarModal.addEventListener('click', function () {
+        avatarOverlay.style.display = 'none';
+      });
+
+      // 2. Name Tag Modal Trigger
+      tagTrigger.addEventListener('click', function () {
+        var currentTag = localStorage.getItem('wb_player_tag') || ('@' + playerName);
+        nametagInput.value = currentTag;
+        nametagError.style.display = 'none';
+        nametagOverlay.style.display = 'flex';
+      });
+
+      nametagInput.addEventListener('input', function () {
+        let val = nametagInput.value.replace(/\s/g, '');
+        if (!val.startsWith('@')) {
+          val = '@' + val;
+        }
+        nametagInput.value = val;
+      });
+
+      btnCancelNametag.addEventListener('click', function () {
+        nametagOverlay.style.display = 'none';
+      });
+
+      btnSaveNametag.addEventListener('click', function () {
+        const nameTag = nametagInput.value.trim();
+        if (nameTag === '@' || nameTag.length < 2) {
+          nametagError.textContent = 'Name tag must start with @ and have at least 1 character.';
+          nametagError.style.display = 'block';
+          return;
+        }
+
+        btnSaveNametag.disabled = true;
+        btnSaveNametag.textContent = 'Saving...';
+        nametagError.style.display = 'none';
+
+        const currentPic = localStorage.getItem('wb_player_pic') || 'p1.png';
+
+        fetch(API_URL + '/api/profile/update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({
+            name_tag: nameTag,
+            profile_pic: currentPic
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          btnSaveNametag.disabled = false;
+          btnSaveNametag.textContent = 'Save';
+
+          if (data && data.error) {
+            nametagError.textContent = data.error;
+            nametagError.style.display = 'block';
+          } else {
+            localStorage.setItem('wb_player_tag', nameTag);
+            updateProfileUI(playerName, nameTag, currentPic);
+            nametagOverlay.style.display = 'none';
+            toast('Name tag updated!');
+          }
+        })
+        .catch(err => {
+          btnSaveNametag.disabled = false;
+          btnSaveNametag.textContent = 'Save';
+          nametagError.textContent = 'Network error. Please try again.';
+          nametagError.style.display = 'block';
+        });
+      });
+
+      var toastTimer;
+      function toast(msg, isErr) {
+        var toastEl = document.getElementById('toast');
+        toastEl.textContent = msg;
+        toastEl.classList.toggle('err', !!isErr);
+        toastEl.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 1500);
+      }
     })();
   </script>
-  <div id="toast"></div>
-
-  <!-- PWA Install Banner -->
-  <div class="pwa-install-banner" id="pwa-install-banner" style="display: none;">
-    <div class="pwa-install-banner-icon">
-      <span class="material-symbols-outlined">bolt</span>
-    </div>
-    <div class="pwa-install-banner-content">
-      <div class="pwa-install-banner-title">Install Word Blaster</div>
-      <div class="pwa-install-banner-desc">Add to home screen for instant access & offline play</div>
-    </div>
-    <div class="pwa-install-banner-actions">
-      <button class="pwa-install-btn" id="pwa-install-btn" style="display: none;" onclick="window.triggerPWAInstall()">Install</button>
-      <button class="pwa-dismiss-btn" onclick="this.closest('.pwa-install-banner').style.display='none'">
-        <span class="material-symbols-outlined">close</span>
-      </button>
-    </div>
-  </div>
 
   <script src="audio-manager.js"></script>
   <!-- PWA Service Worker Registration -->

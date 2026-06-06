@@ -3,9 +3,9 @@
 // Strategy: Cache First for static assets, Network First for API
 // ============================================================
 
-const CACHE_NAME = 'word-blaster-v2';
-const STATIC_CACHE = 'word-blaster-static-v2';
-const DYNAMIC_CACHE = 'word-blaster-dynamic-v2';
+const CACHE_NAME = 'word-blaster-v3';
+const STATIC_CACHE = 'word-blaster-static-v3';
+const DYNAMIC_CACHE = 'word-blaster-dynamic-v3';
 
 // Core app shell files that must be cached for offline support
 const APP_SHELL = [
@@ -26,6 +26,27 @@ const APP_SHELL = [
   './audio-manager.js',
   './song/JVKE - golden hour _instrumental_.mp3',
   './icons/icon-192x192.png',
+  // Profile avatar images (pre-cache all 20)
+  './wb%20profile%20images/p1.png',
+  './wb%20profile%20images/p2.png',
+  './wb%20profile%20images/p3.png',
+  './wb%20profile%20images/p4.png',
+  './wb%20profile%20images/p5.png',
+  './wb%20profile%20images/p6.png',
+  './wb%20profile%20images/p7.png',
+  './wb%20profile%20images/p8.png',
+  './wb%20profile%20images/p9.png',
+  './wb%20profile%20images/p10.png',
+  './wb%20profile%20images/p11.png',
+  './wb%20profile%20images/p12.png',
+  './wb%20profile%20images/p13.png',
+  './wb%20profile%20images/p14.png',
+  './wb%20profile%20images/p15.png',
+  './wb%20profile%20images/p16.png',
+  './wb%20profile%20images/p17.png',
+  './wb%20profile%20images/p18.png',
+  './wb%20profile%20images/p19.png',
+  './wb%20profile%20images/p20.png',
   './icons/icon-512x512.png'
 ];
 
@@ -127,13 +148,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 5. Navigation requests (HTML pages) → Network First with cache fallback
+  // 5. Profile images → Network First so avatar changes show immediately
+  if (url.pathname.includes('wb%20profile%20images') || url.pathname.includes('wb profile images')) {
+    event.respondWith(networkFirst(request, STATIC_CACHE));
+    return;
+  }
+
+  // 6. Navigation requests (HTML pages) → Network First with cache fallback
   if (request.mode === 'navigate') {
     event.respondWith(networkFirst(request, STATIC_CACHE));
     return;
   }
 
-  // 6. All other local assets → Cache First with dynamic cache fallback
+  // 7. All other local assets → Cache First with dynamic cache fallback
   event.respondWith(cacheFirst(request, STATIC_CACHE));
 });
 

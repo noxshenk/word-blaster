@@ -93,16 +93,12 @@
   </main>
 
   <script>
-    let API_URL = 'https://word-blaster.onrender.com/api';
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      if (window.location.port === '3000') {
-        API_URL = window.location.origin + '/api';
-      } else {
-        API_URL = 'http://localhost:3000/api';
+    const API_URL = (function() {
+      if (window.location.hostname.includes('onrender.com')) {
+        return window.location.origin + '/api';
       }
-    } else if (window.location.hostname.includes('onrender.com')) {
-      API_URL = window.location.origin + '/api';
-    }
+      return 'http://localhost:3000/api';
+    })();
 
     // Toggle password visibility
     document.getElementById('toggle-password').addEventListener('click', function () {
@@ -138,6 +134,15 @@
 
       if (!username || !password) return;
 
+      if (username.includes('@')) {
+        notification.textContent = 'Username cannot contain the @ symbol.';
+        notification.style.backgroundColor = 'rgba(244, 67, 54, 0.2)';
+        notification.style.color = '#F44336';
+        notification.style.border = '1px solid rgba(244, 67, 54, 0.4)';
+        notification.style.display = 'block';
+        return;
+      }
+
       btn.disabled = true;
       btn.textContent = 'Connecting...';
       notification.style.display = 'none';
@@ -162,6 +167,20 @@
         localStorage.setItem('wb_player', data.username);
         localStorage.setItem('wb_best', data.highscore || 0);
         localStorage.setItem('wb_registered', 'true');
+
+        // Fetch profile data (name_tag, profile_pic) so menu has it immediately
+        try {
+          const profileRes = await fetch(`${API_URL}/profile`, {
+            headers: { 'Authorization': 'Bearer ' + data.token }
+          });
+          const profileData = await profileRes.json();
+          if (profileData && !profileData.error) {
+            if (profileData.name_tag) localStorage.setItem('wb_player_tag', profileData.name_tag);
+            if (profileData.profile_pic) localStorage.setItem('wb_player_pic', profileData.profile_pic);
+          }
+        } catch (profileErr) {
+          console.warn('Could not pre-fetch profile data:', profileErr);
+        }
 
         // Success notification
         notification.textContent = 'Access granted! Welcome to the Arena.';
